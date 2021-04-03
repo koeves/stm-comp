@@ -1,7 +1,7 @@
 #ifndef TRANSACTION_HPP
 #define TRANSACTION_HPP
 
-#include <iostream>
+#include "Descriptor.hpp"
 
 class Transaction {
 public:
@@ -10,11 +10,14 @@ public:
 
     virtual void write() {};
 
-    virtual void read() { std::cout << "generic transaction" << '\n'; };
+    virtual int read() { return 2; };
 
     virtual void commit() {};
 
     virtual void abort() {};
+
+private:
+    Descriptor desc;
 
 };
 

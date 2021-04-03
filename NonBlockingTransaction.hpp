@@ -3,18 +3,21 @@
 
 #include "Transaction.hpp"
 
-class NonBlockingTransaction : Transaction {
+class NonblockingTransaction : Transaction {
 public:
 
     void begin() override {};
 
     void write() override {};
 
-    void read() override { std::cout << "nonblocking transaction" << '\n'; };
+    int read() override { return 0; };
 
     void commit() override {};
 
     void abort() override {};
+
+private:
+    Descriptor desc;
 };
 
 #endif
