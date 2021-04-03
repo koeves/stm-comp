@@ -69,7 +69,7 @@ public:
         }
 
         for (auto &w : D.writes)
-            std::atomic_ref<uintptr_t>(*w.first))->store(w.second, std::memory_order_release);
+            std::atomic_ref<uintptr_t>(*w.first).store(w.second, std::memory_order_release);
  
         /* for (auto l : D.locks)
             *l.first = D.end_time */
