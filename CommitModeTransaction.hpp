@@ -1,41 +1,26 @@
-#ifndef BLOCKINGTRANSACTION_HPP
-#define BLOCKINGTRANSACTION_HPP
+#ifndef COMMIT_MODE_TRANSACTION_HPP
+#define COMMIT_MODE_TRANSACTION_HPP
 
 #include "LockTable.hpp"
 #include "Descriptor.hpp"
 #include "Includes.hpp"
-#include <string>
 
-class BlockingTransaction {
+class CommitModeTransaction {
 public:
 
     inline void begin(/* jmp_buf *b */) {
         /* D.chk = b; */
         D.start_time = tx_clock;
 
-        TOUT << "THREAD " << id << " STARTED\n";
+        debug_print("STARTED");
     };
 
-    void write(uintptr_t *addr, uintptr_t val) {
+    inline void write(uintptr_t *addr, uintptr_t val) {
         D.writes.insert_or_assign(addr, val);
-
-        /* for (auto &l : D.writes) { */
-        std::atomic<uint64_t> *lock = LT.get_lock(addr);
-        uint64_t prev = *lock;
-
-        if (((prev & 1) == 0) && (prev <= D.start_time)) {
-            if (!lock->compare_exchange_strong(prev, D.my_lock))
-                abort();
-
-            D.locks.push_back({lock, prev});
-        }
-        else if (prev != D.my_lock) {
-            abort();
-        }
-        /* } */
     };
 
-    int read(uintptr_t *addr) { 
+    inline int read(uintptr_t *addr) {
+        /* check if addr is in write set and load it if it is */
         auto it = D.writes.find(addr);
         if (it != D.writes.end())
             return (*it).second;
@@ -54,10 +39,25 @@ public:
         return val;
     };
 
-    void commit() {
+    inline void commit() {
         if (D.writes.empty()) {
             D.reads.clear();
             return;
+        }
+
+        for (auto &l : D.writes) {
+            std::atomic<uint64_t> *lock = LT.get_lock(l.first);
+            uint64_t prev = *lock;
+
+            if (((prev & 1) == 0) && (prev <= D.start_time)) {
+                if (!lock->compare_exchange_strong(prev, D.my_lock))
+                    abort();
+
+                D.locks.push_back({lock, prev});
+            }
+            else if (prev != D.my_lock) {
+                abort();
+            }
         }
 
         uint64_t end_time = ++tx_clock;
@@ -75,7 +75,7 @@ public:
 
         for (auto &w : D.writes)
             std::atomic_ref<uintptr_t>(*w.first).store(w.second, std::memory_order_release);
- 
+
         /* for (auto l : D.locks)
             *l.first = D.end_time */
 
@@ -83,10 +83,10 @@ public:
         D.reads.clear();
         D.locks.clear();
 
-        TOUT << "THREAD " << id << " COMMITED\n";
+        debug_print("COMMITED");
     };
 
-    void abort() {
+    inline void abort() {
         for (auto l : D.locks)
             *l.first = l.second;
 
@@ -94,15 +94,19 @@ public:
         D.reads.clear();
         D.locks.clear();
 
-        TOUT << "THREAD " << id << " ABORTED\n";
+        debug_print("ABORTED");
     };
 
-    BlockingTransaction(int n) : id(n) {};
+    CommitModeTransaction(std::string n) : name("COMMIT MODE TRANSACTION " + n) {};
 
 private:
     Descriptor D;
     LockTable LT;
-    int id;
+    std::string name;
+
+    inline void debug_print(std::string s) {
+        TOUT << name << " " + s << std::endl;
+    }
 };
 
 #endif

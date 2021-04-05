@@ -6,17 +6,11 @@
 #include <unordered_map>
 #include <vector>
 #include <utility>
+#include <string>
 #include <cstdint>
 #include <setjmp.h>
 #include "ThreadStream.hpp"
 
-#define DEBUG 0
-
-#if DEBUG
-
-#include <syncstream>
-#define TRACE std::osyncstream(std::cout)
-
-#endif
+#define DEBUG 1
 
 #endif
