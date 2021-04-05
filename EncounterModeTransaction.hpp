@@ -38,32 +38,27 @@ public:
             if (!lock->compare_exchange_strong(prev, D.my_lock))
                 abort();
 
-            D.locks.push_back({lock, prev});
+            D.locks.insert_or_assign(lock, prev);
         }
         else if (prev != D.my_lock) {
             abort();
         }
 
         /* store new value */
-        for (auto &w : D.writes)
-            std::atomic_ref<uintptr_t>(*w.first).store(w.second, std::memory_order_release);
+        std::atomic_ref<uintptr_t>(*addr).store(val, std::memory_order_release);
     };
 
     inline int read(uintptr_t *addr) {
-        /* check if addr is in write set and load it if it is */
-        auto it = D.writes.find(addr);
-        if (it != D.writes.end())
-            return (*it).second;
-
         std::atomic<uint64_t> *l = LT.get_lock(addr);
-        uint64_t pre = *l;
-        uintptr_t val = std::atomic_ref<uintptr_t>(*addr).load(std::memory_order_acquire);
-        uint64_t post = *l;
 
-        if ((pre & 1) || (pre != post) || (pre > D.start_time)) {
+        /* check if lock for addr is taken and is held by us */
+        if ((*l & 1) && (D.locks.count(l) == 0)) {
             abort();
             return -1;
         }
+
+        /* else read value */
+        uintptr_t val = std::atomic_ref<uintptr_t>(*addr).load(std::memory_order_acquire);
 
         D.reads.push_back(l);
         return val;
@@ -88,9 +83,6 @@ public:
             }
         }
 
-        /* for (auto l : D.locks)
-            *l.first = D.end_time */
-
         D.writes.clear();
         D.reads.clear();
         D.locks.clear();
@@ -112,9 +104,20 @@ public:
     EncounterModeTransaction(std::string n) : name("ENCOUNTER MODE TRANSACTION " + n) {};
 
 private:
-    Descriptor D;
     LockTable LT;
     std::string name;
+
+    class Descriptor {
+    public:
+        jmp_buf *chk;
+        uint64_t my_lock;
+        uint64_t start_time;
+        std::unordered_map< uintptr_t *, uintptr_t > writes;
+        std::vector< std::atomic<uint64_t> *> reads;
+        std::map< std::atomic<uint64_t> *, uint64_t > locks;
+
+        Descriptor() : my_lock(((id_gen++) << 1) | 1) {}
+    } D;
 
 };
 
