@@ -8,5 +8,15 @@
 #include <utility>
 #include <cstdint>
 #include <setjmp.h>
+#include "ThreadStream.hpp"
+
+#define DEBUG 0
+
+#if DEBUG
+
+#include <syncstream>
+#define TRACE std::osyncstream(std::cout)
+
+#endif
 
 #endif
