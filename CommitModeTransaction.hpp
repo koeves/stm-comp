@@ -5,6 +5,14 @@
 #include "Descriptor.hpp"
 #include "Includes.hpp"
 
+#ifdef DEBUG
+#define TRACE(_x)   do {                                        \
+                        TOUT << name << " " << _x << std::endl; \
+                    } while(0)
+#else
+#define TRACE(_x) (void)(_x)
+#endif
+
 class CommitModeTransaction {
 public:
 
@@ -12,7 +20,7 @@ public:
         /* D.chk = b; */
         D.start_time = tx_clock;
 
-        debug_print("STARTED");
+        TRACE("STARTED");
     };
 
     inline void write(uintptr_t *addr, uintptr_t val) {
@@ -83,7 +91,7 @@ public:
         D.reads.clear();
         D.locks.clear();
 
-        debug_print("COMMITED");
+        TRACE("COMMITED");
     };
 
     inline void abort() {
@@ -94,7 +102,7 @@ public:
         D.reads.clear();
         D.locks.clear();
 
-        debug_print("ABORTED");
+        TRACE("ABORTED");
     };
 
     CommitModeTransaction(std::string n) : name("COMMIT MODE TRANSACTION " + n) {};
@@ -102,10 +110,6 @@ public:
 private:
     LockTable LT;
     std::string name;
-
-    inline void debug_print(std::string s) {
-        TOUT << name << " " + s << std::endl;
-    }
 
     class Descriptor {
     public:
