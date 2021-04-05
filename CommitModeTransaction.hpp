@@ -100,13 +100,25 @@ public:
     CommitModeTransaction(std::string n) : name("COMMIT MODE TRANSACTION " + n) {};
 
 private:
-    Descriptor D;
     LockTable LT;
     std::string name;
 
     inline void debug_print(std::string s) {
         TOUT << name << " " + s << std::endl;
     }
+
+    class Descriptor {
+    public:
+        jmp_buf *chk;
+        uint64_t my_lock;
+        uint64_t start_time;
+        std::unordered_map< uintptr_t *, uintptr_t > writes;
+        std::vector< std::atomic<uint64_t> *> reads;
+        std::vector< std::pair< std::atomic<uint64_t> *, uint64_t > > locks;
+
+
+        Descriptor() : my_lock(((id_gen++) << 1) | 1) {}
+    } D;
 };
 
 #endif
