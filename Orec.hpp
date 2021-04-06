@@ -1,7 +1,7 @@
 #ifndef OREC_HPP
 #define OREC_HPP
 
-#include "Includes.hpp"
+#include "Util.hpp"
 
 /* 
  * Ownership Record (ORec) implementation
@@ -16,7 +16,7 @@ public:
 
     inline uint64_t get_version() {
         if (is_locked()) {
-            TOUT << "OREC IS LOCKED BY TX " << owner_id << std::endl;
+            TRACE("OREC IS LOCKED BY TX " + std::to_string(owner_id));
             return -1; 
         }
         return rec >> 1;
