@@ -17,7 +17,7 @@ public:
     inline uint64_t get_version() {
         if (is_locked()) {
             TRACE("OREC IS LOCKED BY TX " + std::to_string(owner_id));
-            return -1; 
+            return 0; 
         }
         return rec >> 1;
     }
@@ -35,12 +35,8 @@ public:
     }
 
     inline bool lock(uint64_t exp, uint64_t id) {
-        if(is_locked()) {
-            TRACE("LOCK IS ALREADY TAKEN");
-            return false;
-        }
-
-        uint64_t old = rec >> 1;
+        uint64_t old = get_version();
+        if (!old) return false;
 
         if (!rec.compare_exchange_strong(exp, (id << 1) | 1)) {
             TRACE("CANNOT ACQUIRE OREC");
