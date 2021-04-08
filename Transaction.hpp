@@ -12,11 +12,11 @@ class Transaction {
 public:
     virtual void begin() {};
 
-    virtual void write(uintptr_t *, uintptr_t) {};
+    virtual bool write(uintptr_t *, uintptr_t) = 0;
 
-    virtual int read(uintptr_t *) = 0;
+    virtual uintptr_t read(uintptr_t *) = 0;
 
-    virtual void commit() {};
+    virtual bool commit() = 0;
 
     virtual void abort() {};
 
