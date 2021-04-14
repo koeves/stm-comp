@@ -22,6 +22,16 @@ public:
         return rec >> 1;
     }
 
+    /* if orec is locked, but Tx is its owner, get old version */
+    inline uint64_t get_version(uint64_t id) {
+        if (owner_id != id) {
+            TRACE("HERE OREC IS LOCKED BY TX " + std::to_string(owner_id));
+            return 0; 
+        }
+
+        return old_version;
+    }
+
     inline uint64_t get_orec() {
         return rec;
     }
