@@ -70,9 +70,9 @@ public:
 
     inline bool commit() override {
         /* validate read-set */
-        if (!validate_read_set()) {
+        /* if (!validate_read_set()) {
             goto abort;
-        }
+        } */
 
         clear_and_release();
 
@@ -80,9 +80,9 @@ public:
 
         return true;
 
-    abort:
+    /* abort:
         abort();
-        return false;
+        return false; */
     };
 
     inline void abort() override {
@@ -103,14 +103,16 @@ private:
     std::unordered_set<Orec *> orecs;
 
     /* 
-     * !!! O(n^2) validation !!! 
+     * !!! O(n^2) validation !!!
+     * 
+     * might not even be necessary for encounter mode 
      * 
      * if orec is both in write and read sets,
      * check if the versions match
      */
     inline bool validate_read_set() {
-        for (auto W : writes) {
-            for (auto R : reads) {
+        for (auto R : reads) {
+            for (auto W : writes) {
                 if (R.first == W.first) {
                     /* check for version mismatch */
                     if (R.second != W.second)
