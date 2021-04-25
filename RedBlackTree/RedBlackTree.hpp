@@ -1,6 +1,8 @@
 #ifndef RED_BLACK_TREE_HPP
 #define RED_BLACK_TREE_HPP
 
+#include <iostream>
+
 #define _BLACK  Node<T>::Color::BLACK 
 #define _RED    Node<T>::Color::RED  
 
@@ -37,7 +39,7 @@ private:
     struct Node {
         Node() {
             l = r = p = nullptr;
-            key = -9999;
+            key = 0;
             color = Color::RED;
         }
 
@@ -71,10 +73,10 @@ private:
         print_inorder(t->l);
         
         std::cout << ((t == root) ? "ROOT (" :  "     (")
-                  << ((t->color == _BLACK) ? "BLACK) " : "RED)   ")
-                  << t->key << " -> p: " << t->p->key << ", " 
-                  << "l: " << t->l->key << ", r: " << t->r->key
-                  << std::endl;
+                  << ((t->color == _BLACK) ? "BLACK) " : "RED)   ") << t->key << " -> "
+                  << "p: " << ((t->p == nil) ? "NIL" : std::to_string(t->p->key)) << ", " 
+                  << "l: " << ((t->l == nil) ? "NIL" : std::to_string(t->l->key)) << ", "
+                  << "r: " << ((t->r == nil) ? "NIL" : std::to_string(t->r->key)) << std::endl;
 
         print_inorder(t->r);
     }
