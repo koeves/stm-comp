@@ -10,13 +10,16 @@
 #define RED_BLACK_TREE_HPP
 
 #include <iostream>
+#include "AbstractTree.hpp"
 
 #define _BLACK  Node<T>::Color::BLACK 
 #define _RED    Node<T>::Color::RED  
 
 template<class T = int>
-class RedBlackTree { 
+class RedBlackTree : public AbstractTree<T> { 
+
 public:
+
     RedBlackTree() {
         nil = new Node<T>;
         nil->color = _BLACK;
@@ -35,11 +38,11 @@ public:
         delete nil;
     }
 
-    void insert(T x) { insert(new Node<T>(x)); }
+    void insert(T x) override { insert(new Node<T>(x)); }
 
-    void remove(T x) { remove(find(root, x)); }
+    void remove(T x) override { remove(find(root, x)); }
 
-    void print() { print_inorder(root); }
+    void print() const override { print_inorder(root); }
 
 private:
 
@@ -75,7 +78,7 @@ private:
         return nullptr;
     }
 
-    void print_inorder(Node<T> *t) {
+    void print_inorder(const Node<T> *t) const {
         if (t == nil) return;
 
         print_inorder(t->l);
