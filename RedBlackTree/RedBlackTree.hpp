@@ -28,7 +28,7 @@ public:
 
     void print() { print_inorder(root); }
 
-//private:
+private:
 
     template<class U = int>
     struct Node {
