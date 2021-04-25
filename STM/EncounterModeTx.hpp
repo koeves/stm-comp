@@ -15,7 +15,7 @@
 #include "Orec.hpp"
 
 template<class T = uintptr_t>
-class TLEncounterModeTx : public Transaction<T> {
+class EncounterModeTx : public Transaction<T> {
 public:
 
     inline void begin() override {
