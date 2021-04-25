@@ -8,6 +8,11 @@
  * 
  *      last bit is 0 : remaining bits are object's version number
  *                  1 : remaining bits are transaction's ID
+ * 
+ *      adapted from the proposed implementation in the book:
+ *          Maurice Herlihy and Nir Shavit. 2012. 
+ *          The Art of Multiprocessor Programming, Revised Reprint (1st. ed.). 
+ *          Morgan Kaufmann Publishers Inc., San Francisco, CA, USA.
  */
 
 class Orec {

@@ -1,3 +1,11 @@
+/* 
+ *  Red-Black Tree datastructure implementation   
+ *        
+ *        based on the book:
+ *              Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, and Clifford Stein. 2009. 
+ *              Introduction to Algorithms, Third Edition (3rd. ed.). The MIT Press.    
+ */
+
 #ifndef RED_BLACK_TREE_HPP
 #define RED_BLACK_TREE_HPP
 
