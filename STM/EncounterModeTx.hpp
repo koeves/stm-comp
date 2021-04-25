@@ -2,7 +2,7 @@
  *  Encounter-order STM implementation
  *
  *     based on and adapted from the encounter-order STM implementation of Dice and Shavit:
- *     Dice, D., & Shavit, N. (2006). What Really Makes Transactions Faster. 
+ *         Dice, D., & Shavit, N. (2006). What Really Makes Transactions Faster. 
  * 
  */
 

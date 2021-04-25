@@ -1,8 +1,3 @@
-#ifndef OREC_HPP
-#define OREC_HPP
-
-#include "Util.hpp"
-
 /* 
  * Ownership Record (ORec) implementation
  * 
@@ -14,6 +9,11 @@
  *          The Art of Multiprocessor Programming, Revised Reprint (1st. ed.). 
  *          Morgan Kaufmann Publishers Inc., San Francisco, CA, USA.
  */
+
+#ifndef OREC_HPP
+#define OREC_HPP
+
+#include "Util.hpp"
 
 class Orec {
 public:
