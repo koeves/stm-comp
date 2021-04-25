@@ -22,7 +22,7 @@ public:
         delete nil;
     }
 
-    void insert(T x) { root = insert(root, root, x); }
+    void insert(T x) { insert(new Node<T>(x)); }
 
     void remove(T x);
 
@@ -94,17 +94,66 @@ private:
         else return t;
     }
 
-    Node<T> *insert(Node<T> *t, Node<T> *p, T x) {
-        if (t == nil) {
-            t = new Node<T>(x);
-            t->left = t->right = nil;
-            t->parent = p;
-        } 
-        else if (x < t->key) t->left = insert(t->left, t, x);
-        else if (x > t->key) t->right = insert (t->right, t, x);
-        return t;
+    void insert(Node<T> *z) {
+        Node<T> *y = nil;
+        Node<T> *x = root;
+
+        while (x != nil) {
+            y = x;
+            if (z->key < x->key) x = x->left;
+            else x = x->right;
+        }
+
+        z->parent = y;
+
+        if (y == nil) root = z;
+        else if (z->key < y->key) y->left = z;
+        else y->right = z;
+
+        z->left = z->right = nil;
+
+        insert_fixup(z);
     }
 
+    void insert_fixup(Node<T> *z) {
+        while (z->parent->color == Node<T>::Color::RED) {
+            if (z->parent == z->parent->parent->left) {
+                Node<T> *y = z->parent->parent->right;
+                if (y->color == Node<T>::Color::RED) {
+                    z->parent->color = y->color = Node<T>::Color::BLACK;
+                    z->parent->parent->color = Node<T>::Color::RED;
+                    z = z->parent->parent;
+                }
+                else if (z == z->parent->right) {
+                    z = z->parent;
+                    left_rotate(z);
+                }
+                else {
+                    z->parent->color = Node<T>::Color::BLACK;
+                    z->parent->parent->color = Node<T>::Color::RED;
+                    right_rotate(z->parent->parent);
+                }
+            }
+            else {
+                Node<T> *y = z->parent->parent->left;
+                if (y->color == Node<T>::Color::RED) {
+                    z->parent->color = y->color = Node<T>::Color::BLACK;
+                    z->parent->parent->color = Node<T>::Color::RED;
+                    z = z->parent->parent;
+                }
+                else if (z == z->parent->left) {
+                    z = z->parent;
+                    right_rotate(z);
+                }
+                else {
+                    z->parent->color = Node<T>::Color::BLACK;
+                    z->parent->parent->color = Node<T>::Color::RED;
+                    left_rotate(z->parent->parent);
+                }
+            }
+        }
+        root->color = Node<T>::Color::BLACK;
+    }
 
     void left_rotate(Node<T> *x) {
         Node<T> *y = x->right;
