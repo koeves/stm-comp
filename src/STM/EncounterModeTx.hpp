@@ -103,7 +103,7 @@ public:
 
     inline int get_id() const { return id; };
 
-    TLEncounterModeTx() : id(id_gen++) {};
+    EncounterModeTx() : id(id_gen++) {};
 
 private:
     int id;
