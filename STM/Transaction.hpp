@@ -1,24 +1,21 @@
+/* 
+ *  Transaction interface
+ *       each STM variation needs the following methods    
+ */
+
 #ifndef TRANSACTION_HPP
 #define TRANSACTION_HPP
 
 #include "Util.hpp"
 
-/* 
- *  Interface of a transaction
- *       STM implementations need to override each method here    
- */
-
+template<class T = uintptr_t>
 class Transaction {
 public:
-    virtual void begin() {};
-
-    virtual bool write(uintptr_t *, uintptr_t) = 0;
-
-    virtual uintptr_t read(uintptr_t *) = 0;
-
-    virtual bool commit() = 0;
-
-    virtual void abort() {};
+    virtual void begin()        {};
+    virtual bool write(T *, T) = 0;
+    virtual T    read(T *)     = 0;
+    virtual bool commit()      = 0;
+    virtual void abort()        {};
 
 private:
     int id;

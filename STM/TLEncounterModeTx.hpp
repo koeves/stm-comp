@@ -1,3 +1,11 @@
+/*
+ *  Encounter-order STM implementation
+ *
+ *     based on and adapted from the encounter-order STM implementation of Dice and Shavit:
+ *     Dice, D., & Shavit, N. (2006). What Really Makes Transactions Faster. 
+ * 
+ */
+
 #ifndef ENCOUNTER_MODE_TRANSACTION_HPP
 #define ENCOUNTER_MODE_TRANSACTION_HPP
 
@@ -6,14 +14,15 @@
 #include "TransactionPool.hpp"
 #include "Orec.hpp"
 
-class TLEncounterModeTx : Transaction {
+template<class T = uintptr_t>
+class TLEncounterModeTx : public Transaction<T> {
 public:
 
     inline void begin() override {
         TRACE("ETx " + std::to_string(id) + " STARTED");
     };
 
-    inline bool write(uintptr_t *addr, uintptr_t val) override {
+    inline bool write(T *addr, T val) override {
         /* save previous value at addr if not already in map */
         prev_values.try_emplace(addr, *addr);
 
@@ -36,13 +45,13 @@ public:
         }
 
         /* store new value */
-        std::atomic_ref<uintptr_t>(*addr).store(val, std::memory_order_release);
+        std::atomic_ref<T>(*addr).store(val, std::memory_order_release);
         writes.push_back({O, O->get_version(id)});
 
         return true;
     };
 
-    inline uintptr_t read(uintptr_t *addr) override {
+    inline T read(T *addr) override {
         Orec *O = get_orec(addr);
 
         /* check if orec for addr is taken and is not held by us */
@@ -65,7 +74,7 @@ public:
 
         /* orec is unlocked, read value */
         
-        return std::atomic_ref<uintptr_t>(*addr).load(std::memory_order_acquire);
+        return std::atomic_ref<T>(*addr).load(std::memory_order_acquire);
     };
 
     inline bool commit() override {
@@ -98,8 +107,8 @@ public:
 
 private:
     int id;
-    std::unordered_map<uintptr_t *, uintptr_t> prev_values;
-    std::vector<std::pair<Orec *, uintptr_t>> reads, writes;
+    std::unordered_map<T *, T> prev_values;
+    std::vector<std::pair<Orec *, T>> reads, writes;
     std::unordered_set<Orec *> orecs;
 
     /* 
@@ -129,7 +138,7 @@ private:
 
     inline void unroll_writes() {
         for (auto w : prev_values) {
-            std::atomic_ref<uintptr_t>(*w.first).store(w.second, std::memory_order_release);
+            std::atomic_ref<T>(*w.first).store(w.second, std::memory_order_release);
         }
     }
 
