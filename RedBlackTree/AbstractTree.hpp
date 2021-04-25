@@ -1,3 +1,8 @@
+/* 
+ *  Abstract Tree datastructure interface 
+ *        
+ */
+
 #ifndef ABSTRACT_TREE_HPP
 #define ABSTRACT_TREE_HPP
 
