@@ -15,7 +15,8 @@
 #include "Orec.hpp"
 
 template<class T = uintptr_t>
-class EncounterModeTx : public Transaction<T> {
+class EncounterModeTx : Transaction<T> {
+
 public:
 
     inline void begin() override {
@@ -106,9 +107,10 @@ public:
     EncounterModeTx() : id(id_gen++) {};
 
 private:
+
     int id;
     std::unordered_map<T *, T> prev_values;
-    std::vector<std::pair<Orec *, T>> reads, writes;
+    std::vector<std::pair<Orec *, uint64_t>> reads, writes;
     std::unordered_set<Orec *> orecs;
 
     /* 
