@@ -15,14 +15,12 @@
 #include <assert.h>
 #include "ThreadStream.hpp"
 
-#define DEBUG 1
+#define DEBUG 0
 
-#ifdef DEBUG
-#define TRACE(_x)   do {                                        \
-                        TOUT << _x << std::endl; \
-                    } while(0)
+#if defined(DEBUG) && DEBUG > 0
+#define TRACE(_x)   do { TOUT << _x << std::endl; } while(0)
 #else
-#define TRACE(_x) (void)(_x)
+#define TRACE(_x)   do {} while(0)
 #endif
 
 #endif
