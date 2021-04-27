@@ -11,10 +11,10 @@
 
 #include <iostream>
 #include "AbstractTree.hpp"
-#include "../STM/EncounterModeTx.hpp" 
+#include "../STM/EncounterModeTx.hpp"
 
 template<class T = int>
-class TransactionalRBTree : public AbstractTree<T> { 
+class TransactionalRBTree : public AbstractTree<T> {
 
 public:
 
@@ -102,7 +102,7 @@ private:
     Node<T> *find_max(Node<T> *t) {
         if (t == nil) return t;
         else if (t->r == nil) return t;
-        else return find_min(t->r);
+        else return find_max(t->r);
     }
 
     Node<T> *find(Node<T> *t, T x) {
@@ -135,9 +135,8 @@ private:
         Tx.write(&z->l, nil);
         Tx.write(&z->r, nil);
         Tx.write(&z->c, TransactionalRBTree::RED);
-        z->c = TransactionalRBTree::RED;
 
-        insert_fixup(z);
+        //insert_fixup(z);
 
         Tx.commit();
     }
