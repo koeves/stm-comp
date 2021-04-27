@@ -11,7 +11,6 @@
 
 #include "Transaction.hpp"
 #include "Util.hpp"
-#include "TransactionPool.hpp"
 #include "Orec.hpp"
 
 #define NUM_LOCKS 1024
@@ -77,7 +76,6 @@ public:
         }
 
         /* orec is unlocked, read value */
-        
         return std::atomic_ref<T>(*addr).load(std::memory_order_acquire);
     };
 
@@ -107,22 +105,20 @@ public:
 
     inline int get_id() const { return id; };
 
-    EncounterModeTx() : id(id_gen++) {};
+    EncounterModeTx() : id(EncounterModeTx::id_gen++) {};
 
 private:
+
+    static inline std::atomic<uint64_t> id_gen {1};
+    static inline Orec orec_table[NUM_LOCKS];
+    static inline Orec *get_orec(void *addr) {
+        return &EncounterModeTx::orec_table[(((uintptr_t)addr) >> GRAIN) % NUM_LOCKS];
+    }
 
     int id;
     std::unordered_map<T *, T> prev_values;
     std::vector<std::pair<Orec *, uint64_t>> reads, writes;
     std::unordered_set<Orec *> orecs;
-
-    static inline std::atomic<uint64_t> id_gen {1};
-
-    static inline Orec orec_table[NUM_LOCKS];
-
-    static inline Orec *get_orec(void *addr) {
-        return &orec_table[(((uintptr_t)addr) >> GRAIN) % NUM_LOCKS];
-    }
 
     /* 
      * !!! O(n^2) validation !!!
