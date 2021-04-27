@@ -14,6 +14,9 @@
 #include "TransactionPool.hpp"
 #include "Orec.hpp"
 
+#define NUM_LOCKS 1024
+#define GRAIN 3
+
 template<class T = uintptr_t>
 class EncounterModeTx : Transaction<T> {
 
@@ -112,6 +115,14 @@ private:
     std::unordered_map<T *, T> prev_values;
     std::vector<std::pair<Orec *, uint64_t>> reads, writes;
     std::unordered_set<Orec *> orecs;
+
+    static inline std::atomic<uint64_t> id_gen {1};
+
+    static inline Orec orec_table[NUM_LOCKS];
+
+    static inline Orec *get_orec(void *addr) {
+        return &orec_table[(((uintptr_t)addr) >> GRAIN) % NUM_LOCKS];
+    }
 
     /* 
      * !!! O(n^2) validation !!!
