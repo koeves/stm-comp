@@ -13,6 +13,9 @@
 #include "AbstractTree.hpp"
 #include "../STM/EncounterModeTx.hpp"
 
+#define BLACK TransactionalRBTree::B
+#define RED   TransactionalRBTree::R
+
 template<class T = int>
 class TransactionalRBTree : public AbstractTree<T> {
 
@@ -20,7 +23,7 @@ public:
 
     TransactionalRBTree() {
         nil = new Node<T>;
-        nil->c = TransactionalRBTree::BLACK;
+        nil->c = BLACK;
         root = nil;
     }
 
@@ -28,14 +31,14 @@ public:
         root = new Node<T>(x);
         nil = new Node<T>;
         root->l = root->r = root->p = nil->l = nil->r = nil->p = nil;
-        root->c = nil->c = TransactionalRBTree::BLACK;
+        root->c = nil->c = BLACK;
     }
 
     ~TransactionalRBTree() {
         root = empty(root);
         delete nil;
-        delete TransactionalRBTree::RED;
-        delete TransactionalRBTree::BLACK;
+        delete RED;
+        delete BLACK;
     }
 
     void insert(T x) override { insert(new Node<T>(x)); }
@@ -46,28 +49,28 @@ public:
 
 private:
 
-    template<class U = int>
+    template<class U = T>
     struct Node {
         Node() {
             l = r = p = nullptr;
             key = 0;
-            c = TransactionalRBTree::RED;
+            c = RED;
         }
 
         Node(U x) {
             l = r = p = nullptr;
             key = x;
-            c = TransactionalRBTree::RED;
+            c = RED;
         }
 
         Node<U> *l, *r, *p, *c;
         U key;
     };
 
-    Node<T> *root, *nil;
+    inline static Node<T> *R = new Node<T>, 
+                          *B = new Node<T>;
 
-    inline static Node<T> *RED   = new Node<T>, 
-                          *BLACK = new Node<T>;
+    Node<T> *root, *nil;
 
     Node<T> *empty(Node<T> *t) {
         if (t == nil) return t;
@@ -85,7 +88,7 @@ private:
         print_inorder(t->l);
         
         std::cout << ((t == root) ? "ROOT (" :  "     (")
-                  << ((t->c == TransactionalRBTree::BLACK) ? "BLACK) " : "RED)   ") << t->key << " -> "
+                  << ((t->c == BLACK) ? "BLACK) " : "RED)   ") << t->key << " -> "
                   << "p: " << ((t->p == nil) ? "NIL" : std::to_string(t->p->key)) << ", " 
                   << "l: " << ((t->l == nil) ? "NIL" : std::to_string(t->l->key)) << ", "
                   << "r: " << ((t->r == nil) ? "NIL" : std::to_string(t->r->key)) << std::endl;
@@ -134,7 +137,7 @@ private:
 
         Tx.write(&z->l, nil);
         Tx.write(&z->r, nil);
-        Tx.write(&z->c, TransactionalRBTree::RED);
+        Tx.write(&z->c, RED);
 
         //insert_fixup(z);
 
@@ -142,12 +145,12 @@ private:
     }
 
     void insert_fixup(Node<T> *z) {
-        while (z->p->c == TransactionalRBTree::RED) {
+        while (z->p->c == RED) {
             if (z->p == z->p->p->l) {
                 Node<T> *y = z->p->p->r;
-                if (y->c == TransactionalRBTree::RED) {
-                    z->p->c = y->c = TransactionalRBTree::BLACK;
-                    z->p->p->c = TransactionalRBTree::RED;
+                if (y->c == RED) {
+                    z->p->c = y->c = BLACK;
+                    z->p->p->c = RED;
                     z = z->p->p;
                 }
                 else if (z == z->p->r) {
@@ -155,16 +158,16 @@ private:
                     left_rotate(z);
                 }
                 else {
-                    z->p->c = TransactionalRBTree::BLACK;
-                    z->p->p->c = TransactionalRBTree::RED;
+                    z->p->c = BLACK;
+                    z->p->p->c = RED;
                     right_rotate(z->p->p);
                 }
             }
             else {
                 Node<T> *y = z->p->p->l;
-                if (y->c == TransactionalRBTree::RED) {
-                    z->p->c = y->c = TransactionalRBTree::BLACK;
-                    z->p->p->c = TransactionalRBTree::RED;
+                if (y->c == RED) {
+                    z->p->c = y->c = BLACK;
+                    z->p->p->c = RED;
                     z = z->p->p;
                 }
                 else if (z == z->p->l) {
@@ -172,13 +175,13 @@ private:
                     right_rotate(z);
                 }
                 else {
-                    z->p->c = TransactionalRBTree::BLACK;
-                    z->p->p->c = TransactionalRBTree::RED;
+                    z->p->c = BLACK;
+                    z->p->p->c = RED;
                     left_rotate(z->p->p);
                 }
             }
         }
-        root->c = TransactionalRBTree::BLACK;
+        root->c = BLACK;
     }
 
     void remove(Node<T> *z) {
@@ -211,70 +214,70 @@ private:
             y->c = z->c;
         }
 
-        if (y_orig_color == TransactionalRBTree::BLACK)
+        if (y_orig_color == BLACK)
             delete_fixup(x);
 
         delete z;
     }
 
     void delete_fixup(Node<T> *x) {
-        while (x != root && x->c == TransactionalRBTree::BLACK) {
+        while (x != root && x->c == BLACK) {
             if (x == x->p->l) {
                 Node<T> *w = x->p->r;
-                if (w->c == TransactionalRBTree::RED) {
-                    w->c = TransactionalRBTree::BLACK;
-                    x->p->c = TransactionalRBTree::RED;
+                if (w->c == RED) {
+                    w->c = BLACK;
+                    x->p->c = RED;
                     left_rotate(x->p);
                     w = x->p->r;
                 }
 
-                if (w->l->c == TransactionalRBTree::BLACK && w->r->c == TransactionalRBTree::BLACK) {
-                    w->c = TransactionalRBTree::RED;
+                if (w->l->c == BLACK && w->r->c == BLACK) {
+                    w->c = RED;
                     x = x->p;
                 }
-                else if (w->r->c == TransactionalRBTree::BLACK) {
-                    w->l->c = TransactionalRBTree::BLACK;
-                    w->c = TransactionalRBTree::RED;
+                else if (w->r->c == BLACK) {
+                    w->l->c = BLACK;
+                    w->c = RED;
                     right_rotate(w);
                     w = x->p->r;
                 }
                 else {
                     w->c = x->p->c;
-                    x->p->c = TransactionalRBTree::BLACK;
-                    w->r->c = TransactionalRBTree::BLACK;
+                    x->p->c = BLACK;
+                    w->r->c = BLACK;
                     left_rotate(x->p);
                     x = root;
                 }
             }
             else {
                 Node<T> *w = x->p->l;
-                if (w->c == TransactionalRBTree::RED) {
-                    w->c = TransactionalRBTree::BLACK;
-                    x->p->c = TransactionalRBTree::RED;
+                if (w->c == RED) {
+                    w->c = BLACK;
+                    x->p->c = RED;
                     right_rotate(x->p);
                     w = x->p->l;
                 }
 
-                if (w->r->c == TransactionalRBTree::BLACK && w->l->c == TransactionalRBTree::BLACK) {
-                    w->c = TransactionalRBTree::RED;
+                if (w->r->c == BLACK && w->l->c == BLACK) {
+                    w->c = RED;
                     x = x->p;
                 }
-                else if (w->l->c == TransactionalRBTree::BLACK) {
-                    w->r->c = TransactionalRBTree::BLACK;
-                    w->c = TransactionalRBTree::RED;
+                else if (w->l->c == BLACK) {
+                    w->r->c = BLACK;
+                    w->c = RED;
                     left_rotate(w);
                     w = x->p->l;
                 }
                 else {
                     w->c = x->p->c;
-                    x->p->c = TransactionalRBTree::BLACK;
-                    w->l->c = TransactionalRBTree::BLACK;
+                    x->p->c = BLACK;
+                    w->l->c = BLACK;
                     right_rotate(x->p);
                     x = root;
                 }
             }
         }
-        x->c = TransactionalRBTree::BLACK;
+        x->c = BLACK;
     }
 
     void transplant(Node<T> *u, Node<T> *v) {
