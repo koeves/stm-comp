@@ -2,24 +2,23 @@
 #define SKIPLIST_NODE_HPP
 
 #include <vector>
+#include <memory>
+#include <cstdlib>
 
 template<class T = int>
-class SkiplistNode {
-public:
-    SkiplistNode() {}
-
-    SkiplistNode(int h) {
-        neighbours.resize(h);
+struct SkiplistNode {
+    SkiplistNode(T val, int h) {
+        value = val;
+        height = h;
+        neighbours = new SkiplistNode*[h + 1];
+        memset(neighbours, 0, sizeof(SkiplistNode*)*(h + 1));
     }
 
-    SkiplistNode<T> at(int i) { return neighbours.at(i); }
-
-    int get_height() { return neighbours.count(); }
-
-private:
+    ~SkiplistNode() { delete[] neighbours; }
 
     T value;
-    std::vector<SkiplistNode<T>> neighbours;
+    int height;
+    SkiplistNode<T> **neighbours;
 };
 
 
