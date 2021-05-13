@@ -35,7 +35,7 @@ public:
         if (!O->is_locked()) {
             if (!O->lock(O->get_orec(), id)) {
                 TRACE("\tTx " + std::to_string(id) + " COUDLN'T LOCK ADDR ");
-                abort();
+                throw AbortException();
                 return false;
             }
 
@@ -43,7 +43,7 @@ public:
         }
         else if (O->get_owner() != id) {
             TRACE("\tTx " + std::to_string(id) + " ADDR OWNED BY Tx " + std::to_string(O->get_owner()));
-            abort();
+            throw AbortException();
             return false;
         }
 
@@ -104,6 +104,10 @@ public:
     };
 
     inline int get_id() const { return id; };
+
+    struct AbortException : public std::exception {
+        const char *what() const throw() { return "Tx aborted"; }
+    };
 
     EncounterModeTx() : id(EncounterModeTx::id_gen++) {};
 
