@@ -117,31 +117,40 @@ private:
 
     void insert(Node<T> *z) {
         EncounterModeTx<Node<T>*> Tx;
-        Tx.begin();
+        bool done = false;
+        while (!done) {
+            try {
+                Tx.begin();
 
-        Node<T> *y = Tx.read(&nil);
-        Node<T> *x = Tx.read(&root);
-        Node<T> *n = Tx.read(&nil);
+                Node<T> *y = Tx.read(&nil);
+                Node<T> *x = Tx.read(&root);
+                Node<T> *n = Tx.read(&nil);
 
-        while (x != n) {
-            y = x;
-            if (z->key < x->key) x = Tx.read(&x->l);
-            else x = Tx.read(&x->r);
+                while (x != n) {
+                    y = x;
+                    if (z->key < x->key) x = Tx.read(&x->l);
+                    else x = Tx.read(&x->r);
+                }
+
+                Tx.write(&z->p, y);
+
+                if (y == n) Tx.write(&root, z);
+                else if (z->key < y->key) Tx.write(&y->l, z);
+                else Tx.write(&y->r, z);
+
+                Tx.write(&z->l, nil);
+                Tx.write(&z->r, nil);
+                Tx.write(&z->c, RED);
+
+                //insert_fixup(z);
+
+                done = Tx.commit();
+            }
+            catch(typename EncounterModeTx<Node<T>*>::AbortException& e) {
+                Tx.abort();
+                done = false;
+            }
         }
-
-        Tx.write(&z->p, y);
-
-        if (y == n) Tx.write(&root, z);
-        else if (z->key < y->key) Tx.write(&y->l, z);
-        else Tx.write(&y->r, z);
-
-        Tx.write(&z->l, nil);
-        Tx.write(&z->r, nil);
-        Tx.write(&z->c, RED);
-
-        //insert_fixup(z);
-
-        Tx.commit();
     }
 
     void insert_fixup(Node<T> *z) {
