@@ -57,14 +57,11 @@ public:
         if (orecs.count(O) == 0) {
             if (O->is_locked()) {
                 /* spin while orec is locked */
+                /* while(O->is_locked());
+                reads.push_back({O, O->get_version()}); */
 
-                /* 
-                 * TODO: cyclic dependency breaks here
-                 * If Tx 1 owns Rec 1 and wants to write Rec 2 while
-                 *    Tx 2 owns Rec 2 and wants to write Rec 1
-                 */
-                while(O->is_locked());
-                reads.push_back({O, O->get_version()});
+                /* or abort */
+                throw AbortException();
             }
         }
         else {
@@ -76,20 +73,11 @@ public:
     };
 
     inline bool commit() override {
-        /* validate read-set */
-        /* if (!validate_read_set()) {
-            goto abort;
-        } */
-
         clear_and_release();
 
         TRACE("ETx " + std::to_string(id) + " COMMITTED");
 
         return true;
-
-    /* abort:
-        abort();
-        return false; */
     };
 
     inline void abort() override {
