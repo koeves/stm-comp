@@ -25,7 +25,7 @@ public:
         TRACE("ETx " + std::to_string(id) + " STARTED");
     };
 
-    inline bool write(T *addr, T val) override {
+    inline void write(T *addr, T val) override {
         /* save previous value at addr if not already in map */
         prev_values.try_emplace(addr, *addr);
 
@@ -36,7 +36,6 @@ public:
             if (!O->lock(O->get_orec(), id)) {
                 TRACE("\tTx " + std::to_string(id) + " COUDLN'T LOCK ADDR ");
                 throw AbortException();
-                return false;
             }
 
             orecs.insert(O);
@@ -44,14 +43,11 @@ public:
         else if (O->get_owner() != id) {
             TRACE("\tTx " + std::to_string(id) + " ADDR OWNED BY Tx " + std::to_string(O->get_owner()));
             throw AbortException();
-            return false;
         }
 
         /* store new value */
         std::atomic_ref<T>(*addr).store(val, std::memory_order_release);
         writes.push_back({O, O->get_version(id)});
-
-        return true;
     };
 
     inline T read(T *addr) override {
