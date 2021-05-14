@@ -7,6 +7,8 @@
 
 template<class T = int>
 struct SkiplistNode {
+    SkiplistNode(T val) : value(val) {}
+    
     SkiplistNode(T val, int h) {
         value = val;
         height = h;

@@ -5,12 +5,15 @@
 #include <random>
 #include <iostream>
 #include "SkiplistNode.hpp"
+#include "../STM/EncounterModeTx.hpp"
+#include "../STM/CommitModeTx.hpp"
+#include "../STM/Transaction.hpp"
 
 template<class T = int>
 class TransactionalSkiplist {
 public:
 
-    TransactionalSkiplist() : 
+    TransactionalSkiplist() :
         head(new SkiplistNode<T>(-1, MAX_LEVEL)), 
         level(0) 
     {}
@@ -73,35 +76,52 @@ private:
 
 template<class T>
 void TransactionalSkiplist<T>::add(T val) {
-    SkiplistNode<T> *curr = head;
-    SkiplistNode<T> *update[MAX_LEVEL + 1];
-    memset(update, 0, sizeof(SkiplistNode<T>*)*(MAX_LEVEL + 1));
+    EncounterModeTx<SkiplistNode<T> *> Tx;
+    bool done = false;
 
-    for (int i = level; i >= 0; i--) {
-        while (curr->neighbours[i] != NULL && curr->neighbours[i]->value < val)
-            curr = curr->neighbours[i];
-        update[i] = curr;
+    while (!done) {
+        try {
+            Tx.begin();
+
+            SkiplistNode<T> *curr = Tx.read(&head);
+            SkiplistNode<T> *update[MAX_LEVEL + 1];
+            memset(update, 0, sizeof(SkiplistNode<T>*)*(MAX_LEVEL + 1));
+
+            for (int i = level; i >= 0; i--) {
+                while (curr->neighbours[i] != NULL && curr->neighbours[i]->value < val)
+                    curr = Tx.read(&curr->neighbours[i]);
+                update[i] = curr;
+            }
+
+            curr = Tx.read(&curr->neighbours[0]);
+
+            if (curr == NULL || curr->value != val) {
+                int h = get_random_height();
+
+                if (h > level) {
+                    for (int i = level + 1; i < h + 1; i++)
+                        update[i] = head;
+
+                    level = h;
+                }
+
+                SkiplistNode<T> *n = new SkiplistNode<T>(val, h);
+
+                for (int i = 0; i <= h; i++) {
+                    Tx.write(&n->neighbours[i], update[i]->neighbours[i]);
+                    Tx.write(&update[i]->neighbours[i], n);
+                }
+            }
+
+            done = Tx.commit();
+        }
+        catch (typename EncounterModeTx<SkiplistNode<T>*>::AbortException &e) {
+            Tx.abort();
+            done = false;
+        }
     }
 
-    curr = curr->neighbours[0];
-
-    if (curr == NULL || curr->value != val) {
-        int h = get_random_height();
-
-        if (h > level) {
-            for (int i = level + 1; i < h + 1; i++)
-                update[i] = head;
-
-            level = h;
-        }
-
-        SkiplistNode<T> *n = new SkiplistNode<T>(val, h);
-
-        for (int i = 0; i <= h; i++) {
-            n->neighbours[i] = update[i]->neighbours[i];
-            update[i]->neighbours[i] = n;
-        }
-    }
+    
 }
 
 #endif
