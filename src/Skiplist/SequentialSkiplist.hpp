@@ -10,18 +10,16 @@ class SequentialSkiplist {
 public:
 
     SequentialSkiplist() : 
-        head(new SkiplistNode<T>(-1, MAX_LEVEL)), 
-        level(0), 
-        count(0) 
+        head(new SkiplistNode<T>(-1, MAX_LEVEL)),  
+        level(0)
     {}
 
     ~SequentialSkiplist() { 
-        for (int i = 0; i <= level; i++) {
-            SkiplistNode<T> *node = head->neighbours[i];
-            while (node != NULL) {
-                delete node;
-                node = node->neighbours[i];
-            }
+        SkiplistNode<T> *node = head->neighbours[0];
+        while (node != NULL) {
+            SkiplistNode<T> *old = node;
+            node = node->neighbours[0];
+            delete old;
         }
         delete head; 
     }
@@ -47,7 +45,6 @@ public:
 private:
 
     SkiplistNode<T> *head;
-    int count;
     int level;
 
     static constexpr double PROB = 0.5;

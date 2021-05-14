@@ -1,6 +1,11 @@
 #ifndef TX_SKIP_HPP
 #define TX_SKIP_HPP
 
+#include <cstring>
+#include <random>
+#include <iostream>
+#include "SkiplistNode.hpp"
+
 template<class T = int>
 class TransactionalSkiplist {
 public:
@@ -11,14 +16,13 @@ public:
     {}
 
     ~TransactionalSkiplist() { 
-        for (int i = 0; i <= level; i++) {
-            SkiplistNode<T> *node = head->neighbours[i];
-            while (node != NULL) {
-                delete node;
-                node = node->neighbours[i];
-            }
+        SkiplistNode<T> *node = head->neighbours[0];
+        while (node != NULL) {
+            SkiplistNode<T> *old = node;
+            node = node->neighbours[0];
+            delete old;
         }
-        delete head; 
+        delete head;
     }
 
     bool contains(T val);
