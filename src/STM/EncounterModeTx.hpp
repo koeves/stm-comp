@@ -57,8 +57,8 @@ public:
         if (orecs.count(O) == 0) {
             if (O->is_locked()) {
                 /* spin while orec is locked */
-                /* while(O->is_locked());
-                reads.push_back({O, O->get_version()}); */
+                // while(O->is_locked());
+                // reads.push_back({O, O->get_version()});
 
                 /* or abort */
                 throw AbortException();

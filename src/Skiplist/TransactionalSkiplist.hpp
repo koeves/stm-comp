@@ -15,7 +15,8 @@ public:
 
     TransactionalSkiplist() :
         head(new SkiplistNode<T>(-1, MAX_LEVEL)), 
-        level(0) 
+        level(new SkiplistNode<T>(0)),
+        l(0)
     {}
 
     ~TransactionalSkiplist() { 
@@ -26,6 +27,7 @@ public:
             delete old;
         }
         delete head;
+        delete level;
     }
 
     bool contains(T val);
@@ -35,7 +37,7 @@ public:
     bool remove(T val);
 
     void display() {
-        for (int i = level; i >= 0; i--) {
+        for (int i = l; i >= 0; i--) {
             SkiplistNode<T> *node = head->neighbours[i];
             std::cout << "Level " << i << ": ";
             while (node != NULL) {
@@ -48,8 +50,8 @@ public:
 
 private:
 
-    SkiplistNode<T> *head;
-    int level;
+    SkiplistNode<T> *head, *level;
+    int l;
 
     static constexpr double PROB = 0.5;
     static const int MAX_LEVEL = 6;
@@ -64,12 +66,12 @@ private:
 
     int get_random_height() {
         double r = get_random_prob();
-        int lvl = 0;
-        while (r < PROB && lvl < MAX_LEVEL) {
-            lvl++;
+        int level = 0;
+        while (r < PROB && level < MAX_LEVEL) {
+            level++;
             r = get_random_prob();
         }
-        return lvl;
+        return level;
     }
 
 };
@@ -80,6 +82,7 @@ void TransactionalSkiplist<T>::add(T val) {
     bool done = false;
 
     while (!done) {
+        SkiplistNode<T> *n = nullptr;
         try {
             Tx.begin();
 
@@ -87,8 +90,9 @@ void TransactionalSkiplist<T>::add(T val) {
             SkiplistNode<T> *update[MAX_LEVEL + 1];
             memset(update, 0, sizeof(SkiplistNode<T>*)*(MAX_LEVEL + 1));
 
-            for (int i = level; i >= 0; i--) {
-                while (curr->neighbours[i] != NULL && curr->neighbours[i]->value < val)
+            for (int i = l; i >= 0; i--) {
+                while (Tx.read(&curr->neighbours[i]) != NULL && 
+                       curr->neighbours[i]->value < val)
                     curr = Tx.read(&curr->neighbours[i]);
                 update[i] = curr;
             }
@@ -98,14 +102,14 @@ void TransactionalSkiplist<T>::add(T val) {
             if (curr == NULL || curr->value != val) {
                 int h = get_random_height();
 
-                if (h > level) {
-                    for (int i = level + 1; i < h + 1; i++)
-                        update[i] = head;
+                if (h > l) {
+                    for (int i = l + 1; i < h + 1; i++)
+                        update[i] = Tx.read(&head);
 
-                    level = h;
+                    l = h;
                 }
 
-                SkiplistNode<T> *n = new SkiplistNode<T>(val, h);
+                n = new SkiplistNode<T>(val, h);
 
                 for (int i = 0; i <= h; i++) {
                     Tx.write(&n->neighbours[i], update[i]->neighbours[i]);
@@ -118,6 +122,7 @@ void TransactionalSkiplist<T>::add(T val) {
         catch (typename EncounterModeTx<SkiplistNode<T>*>::AbortException &e) {
             Tx.abort();
             done = false;
+            if (n) delete n;
         }
     }
 

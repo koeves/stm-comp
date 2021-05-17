@@ -7,8 +7,8 @@
 
 template<class T = int>
 struct SkiplistNode {
-    SkiplistNode(T val) : value(val) {}
-    
+    SkiplistNode(int h) : height(h), neighbours(nullptr) {}
+
     SkiplistNode(T val, int h) {
         value = val;
         height = h;
@@ -16,7 +16,7 @@ struct SkiplistNode {
         memset(neighbours, 0, sizeof(SkiplistNode*)*(h + 1));
     }
 
-    ~SkiplistNode() { delete[] neighbours; }
+    ~SkiplistNode() { if (neighbours) delete[] neighbours; }
 
     T value;
     int height;
