@@ -116,6 +116,8 @@ private:
     }
 
     void insert(Node<T> *z) {
+        using AbortException = typename EncounterModeTx<Node<T>*>::AbortException;
+
         EncounterModeTx<Node<T>*> Tx;
         bool done = false;
         while (!done) {
@@ -145,7 +147,7 @@ private:
 
                 done = Tx.commit();
             }
-            catch(typename EncounterModeTx<Node<T>*>::AbortException& e) {
+            catch(AbortException&) {
                 Tx.abort();
                 done = false;
             }

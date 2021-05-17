@@ -13,8 +13,6 @@ template<class T = int>
 class TransactionalSkiplist {
 public:
 
-    using AbortException = typename EncounterModeTx<SkiplistNode<T>*>::AbortException;
-
     TransactionalSkiplist() :
         head(new SkiplistNode<T>(-1, MAX_LEVEL)), 
         level(0)
@@ -71,6 +69,8 @@ private:
     }
 
     void add(SkiplistNode<T> *n) {
+        using AbortException = typename EncounterModeTx<SkiplistNode<T>*>::AbortException;
+        
         EncounterModeTx<SkiplistNode<T> *> Tx;
         bool done = false;
 
@@ -114,7 +114,7 @@ private:
 
                 done = Tx.commit();
             }
-            catch (AbortException& e) {
+            catch (AbortException&) {
                 Tx.abort();
                 done = false;
                 level = old_level;
