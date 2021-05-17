@@ -13,10 +13,11 @@ template<class T = int>
 class TransactionalSkiplist {
 public:
 
+    using AbortException = typename EncounterModeTx<SkiplistNode<T>*>::AbortException;
+
     TransactionalSkiplist() :
         head(new SkiplistNode<T>(-1, MAX_LEVEL)), 
-        level(new SkiplistNode<T>(0)),
-        l(0)
+        level(0)
     {}
 
     ~TransactionalSkiplist() { 
@@ -27,17 +28,12 @@ public:
             delete old;
         }
         delete head;
-        delete level;
     }
 
-    bool contains(T val);
-
-    void add(T val);
-
-    bool remove(T val);
+    void add(T val) { add(new SkiplistNode<T>(val, get_random_height())); }
 
     void display() {
-        for (int i = l; i >= 0; i--) {
+        for (int i = level; i >= 0; i--) {
             SkiplistNode<T> *node = head->neighbours[i];
             std::cout << "Level " << i << ": ";
             while (node != NULL) {
@@ -50,8 +46,8 @@ public:
 
 private:
 
-    SkiplistNode<T> *head, *level;
-    int l;
+    SkiplistNode<T> *head;
+    std::atomic<int> level;
 
     static constexpr double PROB = 0.5;
     static const int MAX_LEVEL = 6;
@@ -74,59 +70,58 @@ private:
         return level;
     }
 
-};
+    void add(SkiplistNode<T> *n) {
+        EncounterModeTx<SkiplistNode<T> *> Tx;
+        bool done = false;
 
-template<class T>
-void TransactionalSkiplist<T>::add(T val) {
-    EncounterModeTx<SkiplistNode<T> *> Tx;
-    bool done = false;
+        while (!done) {
+            int old_level = 0;
+            try {
+                Tx.begin();
 
-    while (!done) {
-        SkiplistNode<T> *n = nullptr;
-        try {
-            Tx.begin();
+                old_level = level;
 
-            SkiplistNode<T> *curr = Tx.read(&head);
-            SkiplistNode<T> *update[MAX_LEVEL + 1];
-            memset(update, 0, sizeof(SkiplistNode<T>*)*(MAX_LEVEL + 1));
+                SkiplistNode<T> *curr = Tx.read(&head);
+                SkiplistNode<T> *update[MAX_LEVEL + 1];
+                memset(update, 0, sizeof(SkiplistNode<T>*)*(MAX_LEVEL + 1));
 
-            for (int i = l; i >= 0; i--) {
-                while (Tx.read(&curr->neighbours[i]) != NULL && 
-                       curr->neighbours[i]->value < val)
-                    curr = Tx.read(&curr->neighbours[i]);
-                update[i] = curr;
-            }
-
-            curr = Tx.read(&curr->neighbours[0]);
-
-            if (curr == NULL || curr->value != val) {
-                int h = get_random_height();
-
-                if (h > l) {
-                    for (int i = l + 1; i < h + 1; i++)
-                        update[i] = Tx.read(&head);
-
-                    l = h;
+                for (int i = level; i >= 0; i--) {
+                    SkiplistNode<T> *next = Tx.read(&curr->neighbours[i]);
+                    while (next != NULL && next->value < n->value) {
+                        curr = next;
+                        next = Tx.read(&next->neighbours[i]);
+                    }
+                    update[i] = curr;
                 }
 
-                n = new SkiplistNode<T>(val, h);
+                curr = Tx.read(&curr->neighbours[0]);
 
-                for (int i = 0; i <= h; i++) {
-                    Tx.write(&n->neighbours[i], update[i]->neighbours[i]);
-                    Tx.write(&update[i]->neighbours[i], n);
+                if (curr == NULL || curr->value != n->value) {
+                    int h = n->height;
+
+                    if (h > level) {
+                        for (int i = level + 1; i < h + 1; i++)
+                            update[i] = Tx.read(&head);
+
+                        level = h;
+                    }
+
+                    for (int i = 0; i <= h; i++) {
+                        Tx.write(&n->neighbours[i], update[i]->neighbours[i]);
+                        Tx.write(&update[i]->neighbours[i], n);
+                    }
                 }
-            }
 
-            done = Tx.commit();
-        }
-        catch (typename EncounterModeTx<SkiplistNode<T>*>::AbortException &e) {
-            Tx.abort();
-            done = false;
-            if (n) delete n;
+                done = Tx.commit();
+            }
+            catch (AbortException& e) {
+                Tx.abort();
+                done = false;
+                level = old_level;
+            }
         }
     }
 
-    
-}
+};
 
 #endif
