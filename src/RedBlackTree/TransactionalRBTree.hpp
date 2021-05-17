@@ -122,11 +122,10 @@ private:
             try {
                 Tx.begin();
 
-                Node<T> *y = Tx.read(&nil);
+                Node<T> *y = nil;
                 Node<T> *x = Tx.read(&root);
-                Node<T> *n = Tx.read(&nil);
 
-                while (x != n) {
+                while (x != nil) {
                     y = x;
                     if (z->key < x->key) x = Tx.read(&x->l);
                     else x = Tx.read(&x->r);
@@ -134,7 +133,7 @@ private:
 
                 Tx.write(&z->p, y);
 
-                if (y == n) Tx.write(&root, z);
+                if (y == nil) Tx.write(&root, z);
                 else if (z->key < y->key) Tx.write(&y->l, z);
                 else Tx.write(&y->r, z);
 
@@ -142,7 +141,7 @@ private:
                 Tx.write(&z->r, nil);
                 Tx.write(&z->c, RED);
 
-                //insert_fixup(z);
+                insert_fixup(Tx, z);
 
                 done = Tx.commit();
             }
@@ -153,47 +152,51 @@ private:
         }
     }
 
-    void insert_fixup(Node<T> *z) {
-        while (z->p->c == RED) {
-            if (z->p == z->p->p->l) {
-                Node<T> *y = z->p->p->r;
+    void insert_fixup(EncounterModeTx<Node<T>*>& Tx, Node<T> *z) {
+        while (Tx.read(&z->p->c) == RED) {
+            if (Tx.read(&z->p) == Tx.read(&z->p->p->l)) {
+                Node<T> *y = Tx.read(&z->p->p->r);
                 if (y->c == RED) {
-                    z->p->c = y->c = BLACK;
-                    z->p->p->c = RED;
-                    z = z->p->p;
+                    Tx.write(&z->p->c, BLACK);
+                    Tx.write(&y->c, BLACK);
+                    Tx.write(&z->p->p->c, RED);
+                    z = Tx.read(&z->p->p);
                 }
-                else if (z == z->p->r) {
-                    z = z->p;
-                    left_rotate(z);
+                else if (z == Tx.read(&z->p->r)) {
+                    z = Tx.read(&z->p);
+                    left_rotate(Tx, z);
                 }
                 else {
-                    z->p->c = BLACK;
-                    z->p->p->c = RED;
-                    right_rotate(z->p->p);
+                    Tx.write(&z->p->c, BLACK);
+                    Tx.write(&z->p->p->c, RED);
+                    right_rotate(Tx, z->p->p);
                 }
             }
             else {
-                Node<T> *y = z->p->p->l;
+                Node<T> *y = Tx.read(&z->p->p->l);
                 if (y->c == RED) {
-                    z->p->c = y->c = BLACK;
-                    z->p->p->c = RED;
-                    z = z->p->p;
+                    Tx.write(&z->p->c, BLACK);
+                    Tx.write(&y->c, BLACK);
+                    Tx.write(&z->p->p->c, RED);
+                    z = Tx.read(&z->p->p);
                 }
-                else if (z == z->p->l) {
-                    z = z->p;
-                    right_rotate(z);
+                else if (z == Tx.read(&z->p->l)) {
+                    z = Tx.read(&z->p);
+                    right_rotate(Tx, z);
                 }
                 else {
-                    z->p->c = BLACK;
-                    z->p->p->c = RED;
-                    left_rotate(z->p->p);
+                    Tx.write(&z->p->c, BLACK);
+                    Tx.write(&z->p->p->c, RED);
+                    left_rotate(Tx, z->p->p);
                 }
             }
         }
-        root->c = BLACK;
+        Tx.write(&root->c, BLACK);
     }
 
     void remove(Node<T> *z) {
+        EncounterModeTx<Node<T>*> Tx;
+
         Node<T> *y = z, *x;
         Node<T> *y_orig_color = y->c;
 
@@ -224,19 +227,19 @@ private:
         }
 
         if (y_orig_color == BLACK)
-            delete_fixup(x);
+            delete_fixup(Tx, x);
 
         delete z;
     }
 
-    void delete_fixup(Node<T> *x) {
+    void delete_fixup(EncounterModeTx<Node<T>*>& Tx, Node<T> *x) {
         while (x != root && x->c == BLACK) {
             if (x == x->p->l) {
                 Node<T> *w = x->p->r;
                 if (w->c == RED) {
                     w->c = BLACK;
                     x->p->c = RED;
-                    left_rotate(x->p);
+                    left_rotate(Tx, x->p);
                     w = x->p->r;
                 }
 
@@ -247,14 +250,14 @@ private:
                 else if (w->r->c == BLACK) {
                     w->l->c = BLACK;
                     w->c = RED;
-                    right_rotate(w);
+                    right_rotate(Tx, w);
                     w = x->p->r;
                 }
                 else {
                     w->c = x->p->c;
                     x->p->c = BLACK;
                     w->r->c = BLACK;
-                    left_rotate(x->p);
+                    left_rotate(Tx, x->p);
                     x = root;
                 }
             }
@@ -263,7 +266,7 @@ private:
                 if (w->c == RED) {
                     w->c = BLACK;
                     x->p->c = RED;
-                    right_rotate(x->p);
+                    right_rotate(Tx, x->p);
                     w = x->p->l;
                 }
 
@@ -274,14 +277,14 @@ private:
                 else if (w->l->c == BLACK) {
                     w->r->c = BLACK;
                     w->c = RED;
-                    left_rotate(w);
+                    left_rotate(Tx, w);
                     w = x->p->l;
                 }
                 else {
                     w->c = x->p->c;
                     x->p->c = BLACK;
                     w->l->c = BLACK;
-                    right_rotate(x->p);
+                    right_rotate(Tx, x->p);
                     x = root;
                 }
             }
@@ -296,38 +299,38 @@ private:
         v->p = u->p;
     }
 
-    void left_rotate(Node<T> *x) {
-        Node<T> *y = x->r;
-        x->r = y->l;
+    void left_rotate(EncounterModeTx<Node<T>*>& Tx, Node<T> *x) {
+        Node<T> *y = Tx.read(&x->r);
+        Tx.write(&x->r, y->l);
 
-        if (y->l != nil)
-            y->l->p = x;
+        if (Tx.read(&y->l) != nil)
+            Tx.write(&y->l->p, x);
 
-        y->p = x->p;
+        Tx.write(&y->p, x->p);
 
-        if (x->p == nil) root = y;
-        else if (x == x->p->l) x->p->l = y;
-        else x->p->r = y;
+        if (Tx.read(&x->p) == nil) Tx.write(&root, y);
+        else if (x == Tx.read(&x->p->l)) Tx.write(&x->p->l, y);
+        else Tx.write(&x->p->r, y);
 
-        y->l = x;
-        x->p = y;
+        Tx.write(&y->l, x);
+        Tx.write(&x->p, y);
     }
 
-    void right_rotate(Node<T> *y) {
-        Node<T> *x = y->l;
-        y->l = x->r;
+    void right_rotate(EncounterModeTx<Node<T>*>& Tx, Node<T> *y) {
+        Node<T> *x = Tx.read(&y->l);
+        Tx.write(&y->l, x->r);
 
-        if (x->r != nil)
-            x->r->p = y;
+        if (Tx.read(&x->r) != nil)
+            Tx.write(&x->r->p, y);
 
-        x->p = y->p;
+        Tx.write(&x->p, y->p);
 
-        if (y->p == nil) root = x;
-        else if (y == y->p->r) y->p->r = x;
-        else y->p->l = x;
+        if (Tx.read(&y->p) == nil) Tx.write(&root, x);
+        else if (y == Tx.read(&y->p->r)) Tx.write(&y->p->r, x);
+        else Tx.write(&y->p->l, x);
 
-        y->p = x;
-        x->r = y;
+        Tx.write(&y->p, x);
+        Tx.write(&x->r, y);
     }
 };
 
