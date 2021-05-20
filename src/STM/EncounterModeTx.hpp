@@ -50,6 +50,31 @@ public:
         writes.push_back({O, O->get_version(id)});
     };
 
+    inline void write(int *addr, int val) {
+        /* save previous value at addr if not already in map */
+        prev_ints.try_emplace(addr, *addr);
+
+        /* acquire orec for addr */
+        Orec *O = get_orec(addr);
+
+        if (!O->is_locked()) {
+            if (!O->lock(O->get_orec(), id)) {
+                TRACE("\tTx " + std::to_string(id) + " COUDLN'T LOCK ADDR ");
+                throw AbortException();
+            }
+
+            orecs.insert(O);
+        }
+        else if (O->get_owner() != id) {
+            TRACE("\tTx " + std::to_string(id) + " ADDR OWNED BY Tx " + std::to_string(O->get_owner()));
+            throw AbortException();
+        }
+
+        /* store new value */
+        std::atomic_ref<int>(*addr).store(val, std::memory_order_release);
+        writes.push_back({O, O->get_version(id)});
+    };
+
     inline T read(T *addr) override {
         Orec *O = get_orec(addr);
 
@@ -72,7 +97,22 @@ public:
         return std::atomic_ref<T>(*addr).load(std::memory_order_acquire);
     };
 
-    inline bool commit() override {
+    inline int read(int *addr) {
+        Orec *O = get_orec(addr);
+
+        if (orecs.count(O) == 0) {
+            if (O->is_locked()) {
+                throw AbortException();
+            }
+        }
+        else {
+            reads.push_back({O, O->get_version(id)});
+        }
+
+        return std::atomic_ref<int>(*addr).load(std::memory_order_acquire);
+    };
+
+    inline bool commit() override {    
         clear_and_release();
 
         TRACE("ETx " + std::to_string(id) + " COMMITTED");
@@ -89,9 +129,7 @@ public:
 
     inline int get_id() const { return id; };
 
-    struct AbortException : public std::exception {
-        const char *what() const throw() { return "Tx aborted"; }
-    };
+    struct AbortException {};
 
     EncounterModeTx() : id(EncounterModeTx::id_gen++) {};
 
@@ -104,7 +142,8 @@ private:
     }
 
     int id;
-    std::unordered_map<T *, T> prev_values;
+    std::unordered_map<T*, T> prev_values;
+    std::unordered_map<int*, int> prev_ints;
     std::vector<std::pair<Orec *, uint64_t>> reads, writes;
     std::unordered_set<Orec *> orecs;
 
@@ -136,6 +175,9 @@ private:
     inline void unroll_writes() {
         for (auto w : prev_values) {
             std::atomic_ref<T>(*w.first).store(w.second, std::memory_order_release);
+        }
+        for (auto i : prev_ints) {
+            std::atomic_ref<int>(*i.first).store(i.second, std::memory_order_release);
         }
     }
 

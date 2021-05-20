@@ -38,7 +38,7 @@ public:
     }
 
     inline uint64_t get_orec() {
-        return rec;
+        return rec.load();
     }
 
     inline int get_owner() {
