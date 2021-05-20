@@ -1,4 +1,4 @@
-Performance Comparison of Non-blocking and Blocking Software Transactional Memory Implementations   
+Concurrent Datastructure Design for Software Transactional Memory   
 
 Bachelor Thesis 2021    
 
