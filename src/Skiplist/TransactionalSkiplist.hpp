@@ -8,6 +8,7 @@
 #include "../STM/EncounterModeTx.hpp"
 #include "../STM/CommitModeTx.hpp"
 #include "../STM/Transaction.hpp"
+#include "../STM/Orec.hpp"
 
 template<class T = int>
 class TransactionalSkiplist {
@@ -15,6 +16,7 @@ public:
 
     TransactionalSkiplist() :
         head(new SkiplistNode<T>(-1, MAX_LEVEL)), 
+        l(new SkiplistNode<T>(0)),
         level(0)
     {}
 
@@ -26,6 +28,7 @@ public:
             delete old;
         }
         delete head;
+        delete l;
     }
 
     void add(T val) { add(new SkiplistNode<T>(val, get_random_height())); }
@@ -44,8 +47,8 @@ public:
 
 private:
 
-    SkiplistNode<T> *head;
-    std::atomic<int> level;
+    SkiplistNode<T> *head, *l;
+    int level;
 
     static constexpr double PROB = 0.5;
     static const int MAX_LEVEL = 6;
@@ -75,17 +78,14 @@ private:
         bool done = false;
 
         while (!done) {
-            int old_level = 0;
             try {
                 Tx.begin();
-
-                old_level = level;
 
                 SkiplistNode<T> *curr = Tx.read(&head);
                 SkiplistNode<T> *update[MAX_LEVEL + 1];
                 memset(update, 0, sizeof(SkiplistNode<T>*)*(MAX_LEVEL + 1));
 
-                for (int i = level; i >= 0; i--) {
+                for (int i = Tx.read(&level); i >= 0; i--) {
                     SkiplistNode<T> *next = Tx.read(&curr->neighbours[i]);
                     while (next != NULL && next->value < n->value) {
                         curr = next;
@@ -99,11 +99,11 @@ private:
                 if (curr == NULL || curr->value != n->value) {
                     int h = n->height;
 
-                    if (h > level) {
-                        for (int i = level + 1; i < h + 1; i++)
+                    if (h > Tx.read(&level)) {
+                        for (int i = Tx.read(&level) + 1; i < h + 1; i++)
                             update[i] = Tx.read(&head);
 
-                        level = h;
+                        Tx.write(&level, h);
                     }
 
                     for (int i = 0; i <= h; i++) {
@@ -117,7 +117,6 @@ private:
             catch (AbortException&) {
                 Tx.abort();
                 done = false;
-                level = old_level;
             }
         }
     }
