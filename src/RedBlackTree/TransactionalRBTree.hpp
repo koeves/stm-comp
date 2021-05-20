@@ -124,10 +124,10 @@ private:
             try {
                 Tx.begin();
 
-                Node<T> *y = nil;
+                Node<T> *y = Tx.read(&nil);
                 Node<T> *x = Tx.read(&root);
 
-                while (x != nil) {
+                while (x != Tx.read(&nil)) {
                     y = x;
                     if (z->key < x->key) x = Tx.read(&x->l);
                     else x = Tx.read(&x->r);
