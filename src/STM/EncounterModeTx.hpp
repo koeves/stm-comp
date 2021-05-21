@@ -46,7 +46,11 @@ public:
         }
 
         /* store new value */
+#if __GNUC__ > 9
         std::atomic_ref<T>(*addr).store(val, std::memory_order_release);
+#else
+        reinterpret_cast< std::atomic<T>& >(*addr).store(val, std::memory_order_release);
+#endif
         writes.push_back({O, O->get_version(id)});
     };
 
@@ -71,7 +75,11 @@ public:
         }
 
         /* store new value */
+#if __GNUC__ > 9
         std::atomic_ref<int>(*addr).store(val, std::memory_order_release);
+#else
+        reinterpret_cast< std::atomic<int>& >(*addr).store(val, std::memory_order_release);
+#endif
         writes.push_back({O, O->get_version(id)});
     };
 
@@ -94,7 +102,11 @@ public:
         }
 
         /* orec is unlocked, read value */
+#if __GNUC__ > 9
         return std::atomic_ref<T>(*addr).load(std::memory_order_acquire);
+#else
+        return reinterpret_cast< std::atomic<T>& >(*addr).load(std::memory_order_acquire);
+#endif
     };
 
     inline int read(int *addr) {
@@ -109,7 +121,11 @@ public:
             reads.push_back({O, O->get_version(id)});
         }
 
+#if __GNUC__ > 9
         return std::atomic_ref<int>(*addr).load(std::memory_order_acquire);
+#else
+        return reinterpret_cast< std::atomic<int>& >(*addr).load(std::memory_order_acquire);
+#endif
     };
 
     inline bool commit() override {    
@@ -174,10 +190,18 @@ private:
 
     inline void unroll_writes() {
         for (auto w : prev_values) {
+#if __GNUC__ > 9
             std::atomic_ref<T>(*w.first).store(w.second, std::memory_order_release);
+#else
+            reinterpret_cast< std::atomic<T>& >(*w.first).store(w.second, std::memory_order_release);
+#endif
         }
         for (auto i : prev_ints) {
+#if __GNUC__ > 9
             std::atomic_ref<int>(*i.first).store(i.second, std::memory_order_release);
+#else
+            reinterpret_cast< std::atomic<int>& >(*i.first).store(i.second, std::memory_order_release);
+#endif
         }
     }
 
@@ -186,6 +210,7 @@ private:
             O->unlock();
         
         prev_values.clear();
+        prev_ints.clear();
         reads.clear();
         writes.clear();
         orecs.clear();

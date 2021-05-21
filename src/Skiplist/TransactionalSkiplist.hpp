@@ -82,12 +82,11 @@ private:
                 Tx.begin();
 
                 SkiplistNode<T> *curr = Tx.read(&head);
-                SkiplistNode<T> *update[MAX_LEVEL + 1];
-                memset(update, 0, sizeof(SkiplistNode<T>*)*(MAX_LEVEL + 1));
+                SkiplistNode<T> *update[MAX_LEVEL + 1] = {0};
 
                 for (int i = Tx.read(&level); i >= 0; i--) {
                     SkiplistNode<T> *next = Tx.read(&curr->neighbours[i]);
-                    while (next != NULL && next->value < n->value) {
+                    while (next && next->value < n->value) {
                         curr = next;
                         next = Tx.read(&next->neighbours[i]);
                     }
@@ -96,7 +95,7 @@ private:
 
                 curr = Tx.read(&curr->neighbours[0]);
 
-                if (curr == NULL || curr->value != n->value) {
+                if (!curr || curr->value != n->value) {
                     int h = n->height;
 
                     if (h > Tx.read(&level)) {

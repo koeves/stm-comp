@@ -37,7 +37,13 @@ public:
 
         std::atomic<uint64_t> *l = get_lock(addr);
         uint64_t pre = *l;
-        T val = std::atomic_ref<T>(*addr).load(std::memory_order_acquire);
+        T val = 
+#if __GNUC__ > 9
+            std::atomic_ref<T>(*addr).load(std::memory_order_acquire);
+#else
+            reinterpret_cast< std::atomic<T>& >(*addr).load(std::memory_order_acquire);
+#endif    
+
         uint64_t post = *l;
 
         if ((pre & 1) || (pre != post) || (pre > start_time))
@@ -77,7 +83,11 @@ public:
         }
 
         for (auto w : writes)
+#if __GNUC__ > 9
             std::atomic_ref<T>(*w.first).store(w.second, std::memory_order_release);
+#else
+            reinterpret_cast< std::atomic<T>& >(*w.first).store(w.second, std::memory_order_release);
+#endif
 
         for (auto l : locks)
             *l.first = end_time;
