@@ -10,7 +10,7 @@
 #define ENCOUNTER_MODE_TRANSACTION_HPP
 
 #include "Transaction.hpp"
-#include "Util.hpp"
+#include "../Utilities/Util.hpp"
 #include "Orec.hpp"
 
 #define NUM_LOCKS 1024
@@ -105,7 +105,9 @@ public:
 #if __GNUC__ > 9
         return std::atomic_ref<T>(*addr).load(std::memory_order_acquire);
 #else
-        return reinterpret_cast< std::atomic<T>& >(*addr).load(std::memory_order_acquire);
+        alignas( sizeof(T) ) T ret = __atomic_load_n(addr, __ATOMIC_ACQUIRE);
+        return ret;
+        //return reinterpret_cast< std::atomic<T>& >(*addr).load(std::memory_order_acquire);
 #endif
     };
 

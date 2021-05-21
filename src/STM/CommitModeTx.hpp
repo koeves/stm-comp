@@ -10,8 +10,8 @@
 #define COMMIT_MODE_TRANSACTION_HPP
 
 #include "Transaction.hpp"
-#include "Util.hpp"
 #include "Orec.hpp"
+#include "../Utilities/Util.hpp"
 
 #define NUM_LOCKS 1024
 #define GRAIN 3

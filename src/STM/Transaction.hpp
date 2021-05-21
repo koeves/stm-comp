@@ -6,7 +6,7 @@
 #ifndef TRANSACTION_HPP
 #define TRANSACTION_HPP
 
-#include "Util.hpp"
+#include "../Utilities/Util.hpp"
 
 template<class T = uintptr_t>
 class Transaction {
