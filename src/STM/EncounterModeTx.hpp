@@ -11,6 +11,7 @@
 
 #include "Transaction.hpp"
 #include "../Utilities/Util.hpp"
+#include "../Utilities/AtomicRef.hpp"
 #include "Orec.hpp"
 
 #define NUM_LOCKS 1024
@@ -49,7 +50,8 @@ public:
 #if __GNUC__ > 9
         std::atomic_ref<T>(*addr).store(val, std::memory_order_release);
 #else
-        reinterpret_cast< std::atomic<T>& >(*addr).store(val, std::memory_order_release);
+        AtomicRef<T>(addr).store(val);
+        //reinterpret_cast< std::atomic<T>& >(*addr).store(val, std::memory_order_release);
 #endif
         writes.push_back({O, O->get_version(id)});
     };
@@ -78,7 +80,8 @@ public:
 #if __GNUC__ > 9
         std::atomic_ref<int>(*addr).store(val, std::memory_order_release);
 #else
-        reinterpret_cast< std::atomic<int>& >(*addr).store(val, std::memory_order_release);
+        AtomicRef<int>(addr).store(val);
+        //reinterpret_cast< std::atomic<int>& >(*addr).store(val, std::memory_order_release);
 #endif
         writes.push_back({O, O->get_version(id)});
     };
@@ -105,8 +108,7 @@ public:
 #if __GNUC__ > 9
         return std::atomic_ref<T>(*addr).load(std::memory_order_acquire);
 #else
-        alignas( sizeof(T) ) T ret = __atomic_load_n(addr, __ATOMIC_ACQUIRE);
-        return ret;
+        return AtomicRef<T>(addr).load();
         //return reinterpret_cast< std::atomic<T>& >(*addr).load(std::memory_order_acquire);
 #endif
     };
@@ -126,7 +128,8 @@ public:
 #if __GNUC__ > 9
         return std::atomic_ref<int>(*addr).load(std::memory_order_acquire);
 #else
-        return reinterpret_cast< std::atomic<int>& >(*addr).load(std::memory_order_acquire);
+        return AtomicRef<int>(addr).load();
+        //return reinterpret_cast< std::atomic<int>& >(*addr).load(std::memory_order_acquire);
 #endif
     };
 
@@ -195,14 +198,16 @@ private:
 #if __GNUC__ > 9
             std::atomic_ref<T>(*w.first).store(w.second, std::memory_order_release);
 #else
-            reinterpret_cast< std::atomic<T>& >(*w.first).store(w.second, std::memory_order_release);
+            AtomicRef<T>(w.first).store(w.second);
+            //reinterpret_cast< std::atomic<T>& >(*w.first).store(w.second, std::memory_order_release);
 #endif
         }
         for (auto i : prev_ints) {
 #if __GNUC__ > 9
             std::atomic_ref<int>(*i.first).store(i.second, std::memory_order_release);
 #else
-            reinterpret_cast< std::atomic<int>& >(*i.first).store(i.second, std::memory_order_release);
+            AtomicRef<int>(i.first).store(i.second);
+            //reinterpret_cast< std::atomic<int>& >(*i.first).store(i.second, std::memory_order_release);
 #endif
         }
     }
