@@ -133,7 +133,10 @@ public:
 #endif
     };
 
-    inline bool commit() override {    
+    inline bool commit() override {  
+        if (!validate_read_set())
+            throw AbortException();
+
         clear_and_release();
 
         TRACE("ETx " + std::to_string(id) + " COMMITTED");
