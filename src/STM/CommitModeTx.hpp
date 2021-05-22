@@ -12,6 +12,7 @@
 #include "Transaction.hpp"
 #include "Orec.hpp"
 #include "../Utilities/Util.hpp"
+#include "../Utilities/AtomicRef.hpp"
 
 #define NUM_LOCKS 1024
 #define GRAIN 3
@@ -30,6 +31,10 @@ public:
         writes.insert_or_assign(addr, val);
     }
 
+    inline void write(int *addr, int val) {
+        int_writes.insert_or_assign(addr, val);
+    }
+
     inline T read(T *addr) override {
         auto it = writes.find(addr);
         if (it != writes.end())
@@ -41,7 +46,33 @@ public:
 #if __GNUC__ > 9
             std::atomic_ref<T>(*addr).load(std::memory_order_acquire);
 #else
-            reinterpret_cast< std::atomic<T>& >(*addr).load(std::memory_order_acquire);
+            AtomicRef<T>(addr).load();
+            //reinterpret_cast< std::atomic<T>& >(*addr).load(std::memory_order_acquire);
+#endif    
+
+        uint64_t post = *l;
+
+        if ((pre & 1) || (pre != post) || (pre > start_time))
+            throw AbortException();
+
+        reads.push_back(l);
+
+        return val;
+    };
+
+    inline int read(int *addr) {
+        auto it = int_writes.find(addr);
+        if (it != int_writes.end())
+            return (*it).second;
+
+        std::atomic<uint64_t> *l = get_lock(addr);
+        uint64_t pre = *l;
+        int val = 
+#if __GNUC__ > 9
+            std::atomic_ref<int>(*addr).load(std::memory_order_acquire);
+#else
+            AtomicRef<int>(addr).load();
+            //reinterpret_cast< std::atomic<int>& >(*addr).load(std::memory_order_acquire);
 #endif    
 
         uint64_t post = *l;
@@ -55,12 +86,27 @@ public:
     };
 
     inline bool commit() override {
-        if (writes.empty()) {
+        if (writes.empty() || int_writes.empty()) {
             reads.clear();
+            writes.clear();
+            int_writes.clear();
             return true;
         }
 
         for (auto &l : writes) {
+            std::atomic<uint64_t> *lock = get_lock(l.first);
+            uint64_t prev = *lock;
+            if (((prev & 1) == 0) && (prev <= start_time)) {
+                if (!lock->compare_exchange_strong(prev, my_lock))
+                    throw AbortException();
+                locks.push_back({lock, prev});
+            }
+            else if (prev != my_lock) {
+                throw AbortException();
+            }
+        }
+
+        for (auto &l : int_writes) {
             std::atomic<uint64_t> *lock = get_lock(l.first);
             uint64_t prev = *lock;
             if (((prev & 1) == 0) && (prev <= start_time)) {
@@ -86,13 +132,23 @@ public:
 #if __GNUC__ > 9
             std::atomic_ref<T>(*w.first).store(w.second, std::memory_order_release);
 #else
-            reinterpret_cast< std::atomic<T>& >(*w.first).store(w.second, std::memory_order_release);
+            AtomicRef<T>(w.first).store(w.second);
+            //reinterpret_cast< std::atomic<T>& >(*w.first).store(w.second, std::memory_order_release);
+#endif
+
+        for (auto w : int_writes)
+#if __GNUC__ > 9
+            std::atomic_ref<int>(*w.first).store(w.second, std::memory_order_release);
+#else
+            AtomicRef<int>(w.first).store(w.second);
+            //reinterpret_cast< std::atomic<int>& >(*w.first).store(w.second, std::memory_order_release);
 #endif
 
         for (auto l : locks)
             *l.first = end_time;
 
         writes.clear();
+        int_writes.clear();
         locks.clear();
         reads.clear();
 
@@ -125,6 +181,7 @@ private:
     int id;
     uint64_t my_lock, start_time;
     std::unordered_map<T *, T> writes;
+    std::unordered_map<int *, int> int_writes;
     std::vector<std::pair<std::atomic<uint64_t> *, uint64_t>> locks;
     std::vector<std::atomic<uint64_t>*> reads;
 
