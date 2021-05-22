@@ -23,7 +23,7 @@ public:
         if (is_locked()) 
             return old_version;
 
-        return rec >> 1;
+        return rec;
     }
 
     inline uint64_t get_orec() {
@@ -43,7 +43,6 @@ public:
         int old = get_version();
 
         if (!rec.compare_exchange_strong(exp, (id << 1) | 1)) {
-            TRACE("CANNOT ACQUIRE OREC");
             return false; 
         }
 
@@ -56,7 +55,7 @@ public:
     }
 
     inline void unlock() {
-        rec.store((old_version + 1) << 1);
+        rec.store(((old_version >> 1) + 1) << 1);
     }
 
     inline bool is_locked() {

@@ -13,14 +13,16 @@
 #include <setjmp.h>
 #include <any>
 #include <assert.h>
+#include <chrono>
+#include <thread>
 #include "ThreadStream.hpp"
 
 #define DEBUG 1
 
 #if defined(DEBUG) && DEBUG > 0
-#define TRACE(_x)   do { TOUT << _x << std::endl; } while(0)
+    #define TRACE(_x)   do { TOUT << _x << std::endl; } while(0)
 #else
-#define TRACE(_x)   do {} while(0)
+    #define TRACE(_x)   do {} while(0)
 #endif
 
 #if __GNUC__ > 9
