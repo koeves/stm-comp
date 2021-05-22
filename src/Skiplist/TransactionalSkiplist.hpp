@@ -7,8 +7,15 @@
 #include "SkiplistNode.hpp"
 #include "../STM/EncounterModeTx.hpp"
 #include "../STM/CommitModeTx.hpp"
+#include "../STM/TLCommitModeTx.hpp"
 #include "../STM/Transaction.hpp"
 #include "../STM/Orec.hpp"
+
+#define ___1 EncounterModeTx<SkiplistNode<T>*>
+#define ___2 TLCommitModeTx<SkiplistNode<T>*>
+#define ___3 CommitModeTx<SkiplistNode<T>*>
+
+#define TX__ ___1
 
 template<class T = int>
 class TransactionalSkiplist {
@@ -70,9 +77,9 @@ private:
     }
 
     void add(SkiplistNode<T> *n) {
-        using AbortException = typename EncounterModeTx<SkiplistNode<T>*>::AbortException;
-        
-        EncounterModeTx<SkiplistNode<T> *> Tx;
+        using AbortException = typename TX__::AbortException;
+
+        TX__ Tx;
         bool done = false;
 
         while (!done) {
