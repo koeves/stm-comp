@@ -16,7 +16,6 @@ public:
 
     TransactionalSkiplist() :
         head(new SkiplistNode<T>(-1, MAX_LEVEL)), 
-        l(new SkiplistNode<T>(0)),
         level(0)
     {}
 
@@ -28,7 +27,6 @@ public:
             delete old;
         }
         delete head;
-        delete l;
     }
 
     void add(T val) { add(new SkiplistNode<T>(val, get_random_height())); }
@@ -47,7 +45,7 @@ public:
 
 private:
 
-    SkiplistNode<T> *head, *l;
+    SkiplistNode<T> *head;
     int level;
 
     static constexpr double PROB = 0.5;
@@ -81,21 +79,19 @@ private:
             try {
                 Tx.begin();
 
-                SkiplistNode<T> *curr = Tx.read(&head);
+                SkiplistNode<T> *curr = head;
                 SkiplistNode<T> *update[MAX_LEVEL + 1] = {0};
 
                 for (int i = Tx.read(&level); i >= 0; i--) {
-                    SkiplistNode<T> *next = Tx.read(&curr->neighbours[i]);
-                    while (next && next->value < n->value) {
-                        curr = next;
-                        next = Tx.read(&next->neighbours[i]);
+                    while (Tx.read(&curr->neighbours[i]) && 
+                           Tx.read(&curr->neighbours[i]->value) < n->value) {
+                        curr = Tx.read(&curr->neighbours[i]);
                     }
                     update[i] = curr;
                 }
 
-                curr = Tx.read(&curr->neighbours[0]);
-
-                if (!curr || curr->value != n->value) {
+                if (!Tx.read(&curr->neighbours[0]) || 
+                     Tx.read(&curr->neighbours[0]->value) != n->value) {
                     int h = n->height;
 
                     if (h > Tx.read(&level)) {

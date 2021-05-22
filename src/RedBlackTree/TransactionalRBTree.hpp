@@ -11,7 +11,7 @@
 
 #include <iostream>
 #include "AbstractTree.hpp"
-#include "../STM/EncounterModeTx.hpp"
+#include "../STM/CommitModeTx.hpp"
 
 #define BLACK TransactionalRBTree::B
 #define RED   TransactionalRBTree::R
@@ -116,9 +116,9 @@ private:
     }
 
     void insert(Node<T> *z) {
-        using AbortException = typename EncounterModeTx<Node<T>*>::AbortException;
+        using AbortException = typename CommitModeTx<Node<T>*>::AbortException;
 
-        EncounterModeTx<Node<T>*> Tx;
+        CommitModeTx<Node<T>*> Tx;
         bool done = false;
         while (!done) {
             try {
@@ -129,14 +129,14 @@ private:
 
                 while (x != Tx.read(&nil)) {
                     y = x;
-                    if (z->key < x->key) x = Tx.read(&x->l);
+                    if (z->key < Tx.read(&x->key)) x = Tx.read(&x->l);
                     else x = Tx.read(&x->r);
                 }
 
                 Tx.write(&z->p, y);
 
                 if (y == nil) Tx.write(&root, z);
-                else if (z->key < y->key) Tx.write(&y->l, z);
+                else if (z->key < Tx.read(&y->key)) Tx.write(&y->l, z);
                 else Tx.write(&y->r, z);
 
                 Tx.write(&z->l, nil);
@@ -154,7 +154,7 @@ private:
         }
     }
 
-    void insert_fixup(EncounterModeTx<Node<T>*>& Tx, Node<T> *z) {
+    void insert_fixup(CommitModeTx<Node<T>*>& Tx, Node<T> *z) {
         while (Tx.read(&z->p->c) == RED) {
             if (Tx.read(&z->p) == Tx.read(&z->p->p->l)) {
                 Node<T> *y = Tx.read(&z->p->p->r);
@@ -197,7 +197,7 @@ private:
     }
 
     void remove(Node<T> *z) {
-        EncounterModeTx<Node<T>*> Tx;
+        CommitModeTx<Node<T>*> Tx;
 
         Node<T> *y = z, *x;
         Node<T> *y_orig_color = y->c;
@@ -234,7 +234,7 @@ private:
         delete z;
     }
 
-    void delete_fixup(EncounterModeTx<Node<T>*>& Tx, Node<T> *x) {
+    void delete_fixup(CommitModeTx<Node<T>*>& Tx, Node<T> *x) {
         while (x != root && x->c == BLACK) {
             if (x == x->p->l) {
                 Node<T> *w = x->p->r;
@@ -301,7 +301,7 @@ private:
         v->p = u->p;
     }
 
-    void left_rotate(EncounterModeTx<Node<T>*>& Tx, Node<T> *x) {
+    void left_rotate(CommitModeTx<Node<T>*>& Tx, Node<T> *x) {
         Node<T> *y = Tx.read(&x->r);
         Tx.write(&x->r, y->l);
 
@@ -318,7 +318,7 @@ private:
         Tx.write(&x->p, y);
     }
 
-    void right_rotate(EncounterModeTx<Node<T>*>& Tx, Node<T> *y) {
+    void right_rotate(CommitModeTx<Node<T>*>& Tx, Node<T> *y) {
         Node<T> *x = Tx.read(&y->l);
         Tx.write(&y->l, x->r);
 
