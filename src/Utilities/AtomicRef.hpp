@@ -3,10 +3,12 @@
  *
  */
 
+#ifndef ATOMIC_REF_HPP
+#define ATOMIC_REF_HPP
+
 template<class T>
 class AtomicRef {
 public:
-    AtomicRef() : addr(nullptr) {}
     AtomicRef(T *ad) : addr(ad) {}
 
     inline T load() {
@@ -21,3 +23,5 @@ public:
 private:
     T *addr;
 };
+
+#endif
