@@ -14,16 +14,13 @@
 #include "../Utilities/Util.hpp"
 #include "../Utilities/AtomicRef.hpp"
 
-#define NUM_LOCKS 1024
-#define GRAIN 3
-
 template<class T = uintptr_t>
 class CommitModeTx : Transaction<T> {
 
 public:
 
     inline void begin() override {
-        TRACE("ETx " + std::to_string(id) + " STARTED");
+        TRACE("CTx " + std::to_string(id) + " STARTED");
         start_time = clock;
     }
 
@@ -42,13 +39,7 @@ public:
 
         std::atomic<uint64_t> *l = get_lock(addr);
         uint64_t pre = *l;
-        T val = 
-#if __GNUC__ > 9
-            std::atomic_ref<T>(*addr).load(std::memory_order_acquire);
-#else
-            AtomicRef<T>(addr).load();
-            //reinterpret_cast< std::atomic<T>& >(*addr).load(std::memory_order_acquire);
-#endif    
+        T val = ATOMIC_LOAD(T, addr);
 
         uint64_t post = *l;
 
@@ -67,13 +58,7 @@ public:
 
         std::atomic<uint64_t> *l = get_lock(addr);
         uint64_t pre = *l;
-        int val = 
-#if __GNUC__ > 9
-            std::atomic_ref<int>(*addr).load(std::memory_order_acquire);
-#else
-            AtomicRef<int>(addr).load();
-            //reinterpret_cast< std::atomic<int>& >(*addr).load(std::memory_order_acquire);
-#endif    
+        int val = ATOMIC_LOAD(int, addr);
 
         uint64_t post = *l;
 
@@ -129,20 +114,10 @@ public:
         }
 
         for (auto w : writes)
-#if __GNUC__ > 9
-            std::atomic_ref<T>(*w.first).store(w.second, std::memory_order_release);
-#else
-            AtomicRef<T>(w.first).store(w.second);
-            //reinterpret_cast< std::atomic<T>& >(*w.first).store(w.second, std::memory_order_release);
-#endif
+            ATOMIC_STORE(T, w.first, w.second);
 
         for (auto w : int_writes)
-#if __GNUC__ > 9
-            std::atomic_ref<int>(*w.first).store(w.second, std::memory_order_release);
-#else
-            AtomicRef<int>(w.first).store(w.second);
-            //reinterpret_cast< std::atomic<int>& >(*w.first).store(w.second, std::memory_order_release);
-#endif
+            ATOMIC_STORE(int, w.first, w.second);
 
         for (auto l : locks)
             *l.first = end_time;
@@ -152,7 +127,7 @@ public:
         locks.clear();
         reads.clear();
 
-        TRACE("ETx " + std::to_string(id) + " COMMITTED");
+        TRACE("CTx " + std::to_string(id) + " COMMITTED");
         return true;
     };
 
@@ -162,9 +137,10 @@ public:
 
         reads.clear();
         writes.clear();
+        int_writes.clear();
         locks.clear();
 
-        TRACE("ETx " + std::to_string(id) + " ABORTED");
+        TRACE("CTx " + std::to_string(id) + " ABORTED");
     };
 
     inline int get_id() const { return id; };
@@ -185,6 +161,8 @@ private:
     std::vector<std::pair<std::atomic<uint64_t> *, uint64_t>> locks;
     std::vector<std::atomic<uint64_t>*> reads;
 
+    static const int NUM_LOCKS = 2048;
+    static const int GRAIN = 3;
     static inline std::atomic<uint64_t> id_gen {1};
     static inline std::atomic<uint64_t> clock {0};
     static inline std::atomic<uint64_t> lock_table[NUM_LOCKS];

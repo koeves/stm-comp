@@ -14,9 +14,6 @@
 #include "../Utilities/AtomicRef.hpp"
 #include "Orec.hpp"
 
-#define NUM_LOCKS 1024
-#define GRAIN 3
-
 template<class T = uintptr_t>
 class EncounterModeTx : Transaction<T> {
 
@@ -47,12 +44,7 @@ public:
         }
 
         /* store new value */
-#if __GNUC__ > 9
-        std::atomic_ref<T>(*addr).store(val, std::memory_order_release);
-#else
-        AtomicRef<T>(addr).store(val);
-        //reinterpret_cast< std::atomic<T>& >(*addr).store(val, std::memory_order_release);
-#endif
+        ATOMIC_STORE(T, addr, val);
         writes.push_back({O, O->get_version(id)});
     };
 
@@ -77,12 +69,7 @@ public:
         }
 
         /* store new value */
-#if __GNUC__ > 9
-        std::atomic_ref<int>(*addr).store(val, std::memory_order_release);
-#else
-        AtomicRef<int>(addr).store(val);
-        //reinterpret_cast< std::atomic<int>& >(*addr).store(val, std::memory_order_release);
-#endif
+        ATOMIC_STORE(int, addr, val);
         writes.push_back({O, O->get_version(id)});
     };
 
@@ -105,12 +92,7 @@ public:
         }
 
         /* orec is unlocked, read value */
-#if __GNUC__ > 9
-        return std::atomic_ref<T>(*addr).load(std::memory_order_acquire);
-#else
-        return AtomicRef<T>(addr).load();
-        //return reinterpret_cast< std::atomic<T>& >(*addr).load(std::memory_order_acquire);
-#endif
+        return ATOMIC_LOAD(T, addr);
     };
 
     inline int read(int *addr) {
@@ -125,12 +107,7 @@ public:
             reads.push_back({O, O->get_version(id)});
         }
 
-#if __GNUC__ > 9
-        return std::atomic_ref<int>(*addr).load(std::memory_order_acquire);
-#else
-        return AtomicRef<int>(addr).load();
-        //return reinterpret_cast< std::atomic<int>& >(*addr).load(std::memory_order_acquire);
-#endif
+        return ATOMIC_LOAD(int, addr);
     };
 
     inline bool commit() override {  
@@ -158,7 +135,8 @@ public:
     EncounterModeTx() : id(EncounterModeTx::id_gen++) {};
 
 private:
-
+    static const int NUM_LOCKS = 2048;
+    static const int GRAIN = 3;
     static inline std::atomic<uint64_t> id_gen {1};
     static inline Orec orec_table[NUM_LOCKS];
     static inline Orec *get_orec(void *addr) {
@@ -198,20 +176,10 @@ private:
 
     inline void unroll_writes() {
         for (auto w : prev_values) {
-#if __GNUC__ > 9
-            std::atomic_ref<T>(*w.first).store(w.second, std::memory_order_release);
-#else
-            AtomicRef<T>(w.first).store(w.second);
-            //reinterpret_cast< std::atomic<T>& >(*w.first).store(w.second, std::memory_order_release);
-#endif
+            ATOMIC_STORE(T, w.first, w.second);
         }
         for (auto i : prev_ints) {
-#if __GNUC__ > 9
-            std::atomic_ref<int>(*i.first).store(i.second, std::memory_order_release);
-#else
-            AtomicRef<int>(i.first).store(i.second);
-            //reinterpret_cast< std::atomic<int>& >(*i.first).store(i.second, std::memory_order_release);
-#endif
+            ATOMIC_STORE(int, i.first, i.second);
         }
     }
 

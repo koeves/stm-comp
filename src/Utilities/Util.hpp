@@ -23,4 +23,12 @@
 #define TRACE(_x)   do {} while(0)
 #endif
 
+#if __GNUC__ > 9
+    #define ATOMIC_LOAD(_T, _x) std::atomic_ref<_T>(*_x).load(std::memory_order_acquire)
+    #define ATOMIC_STORE(_T, _x, _y) std::atomic_ref<_T>(*_x).store(_y, std::memory_order_release)  
+#else
+    #define ATOMIC_LOAD(_T, _x) AtomicRef<_T>(_x).load()
+    #define ATOMIC_STORE(_T, _x, _y) AtomicRef<_T>(_x).store(_y)
+#endif
+
 #endif
