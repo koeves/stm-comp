@@ -24,39 +24,31 @@ public:
     };
 
     inline void write(T *addr, T val) override {
+        /* acquire orec for addr */
+        Orec *O = get_orec(addr);
+
+        if (!O->is_locked()) {
+            if (!O->lock(O->get_orec(), id)) {
+                TRACE("\tTx " + std::to_string(id) + " COUDLN'T LOCK ADDR ");
+                throw AbortException();
+            }
+
+            orecs.insert(O);
+        }
+        else if (O->get_owner() != id) {
+            TRACE("\tTx " + std::to_string(id) + " ADDR OWNED BY Tx " + std::to_string(O->get_owner()));
+            throw AbortException();
+        }
+
         /* save previous value at addr if not already in map */
         prev_values.try_emplace(addr, *addr);
 
-        /* acquire orec for addr */
-        Orec *O = get_orec(addr);
-
-        if (!O->is_locked()) {
-            if (!O->lock(O->get_orec(), id)) {
-                TRACE("\tTx " + std::to_string(id) + " COUDLN'T LOCK ADDR ");
-                throw AbortException();
-            }
-
-            orecs.insert(O);
-        }
-        else if (O->get_owner() != id) {
-            TRACE("\tTx " + std::to_string(id) + " ADDR OWNED BY Tx " + std::to_string(O->get_owner()));
-            throw AbortException();
-        }
-
         /* store new value */
-#if __GNUC__ > 9
-        std::atomic_ref<T>(*addr).store(val, std::memory_order_release);
-#else
-        AtomicRef<T>(addr).store(val);
-        //reinterpret_cast< std::atomic<T>& >(*addr).store(val, std::memory_order_release);
-#endif
-        writes.push_back({O, O->get_version(id)});
+        ATOMIC_STORE(T, addr, val);
+        writes.push_back({O, O->get_version()});
     };
 
     inline void write(int *addr, int val) {
-        /* save previous value at addr if not already in map */
-        prev_ints.try_emplace(addr, *addr);
-
         /* acquire orec for addr */
         Orec *O = get_orec(addr);
 
@@ -73,14 +65,12 @@ public:
             throw AbortException();
         }
 
+        /* save previous value at addr if not already in map */
+        prev_ints.try_emplace(addr, *addr);
+
         /* store new value */
-#if __GNUC__ > 9
-        std::atomic_ref<int>(*addr).store(val, std::memory_order_release);
-#else
-        AtomicRef<int>(addr).store(val);
-        //reinterpret_cast< std::atomic<int>& >(*addr).store(val, std::memory_order_release);
-#endif
-        writes.push_back({O, O->get_version(id)});
+        ATOMIC_STORE(int, addr, val);
+        writes.push_back({O, O->get_version()});
     };
 
     inline T read(T *addr) override {
@@ -90,47 +80,42 @@ public:
         if (orecs.count(O) == 0) {
             if (O->is_locked()) {
                 /* spin while orec is locked */
-                // while(O->is_locked());
-                // reads.push_back({O, O->get_version()});
+                //while(O->is_locked());
+                //reads.push_back({O, O->get_version()});
 
                 /* or abort */
                 throw AbortException();
             }
         }
         else {
-            reads.push_back({O, O->get_version(id)});
+            reads.push_back({O, O->get_version()});
         }
 
         /* orec is unlocked, read value */
-#if __GNUC__ > 9
-        return std::atomic_ref<T>(*addr).load(std::memory_order_acquire);
-#else
-        return AtomicRef<T>(addr).load();
-        //return reinterpret_cast< std::atomic<T>& >(*addr).load(std::memory_order_acquire);
-#endif
+        return ATOMIC_LOAD(T, addr);
     };
 
     inline int read(int *addr) {
         Orec *O = get_orec(addr);
 
         if (orecs.count(O) == 0) {
-            if (O->is_locked()) {
+            if (O->is_locked()) 
                 throw AbortException();
-            }
         }
         else {
-            reads.push_back({O, O->get_version(id)});
+            reads.push_back({O, O->get_version()});
         }
 
-#if __GNUC__ > 9
-        return std::atomic_ref<int>(*addr).load(std::memory_order_acquire);
-#else
-        return AtomicRef<int>(addr).load();
-        //return reinterpret_cast< std::atomic<int>& >(*addr).load(std::memory_order_acquire);
-#endif
+        return ATOMIC_LOAD(int, addr);
     };
 
-    inline bool commit() override {    
+    inline bool commit() override {
+        for (auto r : reads) {
+            if (r.first->get_version() != r.second) {
+                TRACE("\tETx " + std::to_string(id) + " SAW INCONSISTENT READ");
+                throw AbortException();
+            }
+        }  
         clear_and_release();
 
         TRACE("ETx " + std::to_string(id) + " COMMITTED");
@@ -166,48 +151,12 @@ private:
     std::vector<std::pair<Orec *, uint64_t>> reads, writes;
     std::unordered_set<Orec *> orecs;
 
-    /* 
-     * !!! O(n^2) validation !!!
-     * 
-     * might not even be necessary for encounter mode 
-     * 
-     * if orec is both in write and read sets,
-     * check if the versions match
-     */
-    inline bool validate_read_set() {
-        for (auto R : reads) {
-            for (auto W : writes) {
-                if (R.first == W.first) {
-                    /* check for version mismatch */
-                    if (R.second != W.second)
-                        return false;
-
-                    /* we need only check the earliest occurrence */
-                    else 
-                        break;
-                }
-            }
-        }
-        return true;
-    }
-
     inline void unroll_writes() {
-        for (auto w : prev_values) {
-#if __GNUC__ > 9
-            std::atomic_ref<T>(*w.first).store(w.second, std::memory_order_release);
-#else
-            AtomicRef<T>(w.first).store(w.second);
-            //reinterpret_cast< std::atomic<T>& >(*w.first).store(w.second, std::memory_order_release);
-#endif
-        }
-        for (auto i : prev_ints) {
-#if __GNUC__ > 9
-            std::atomic_ref<int>(*i.first).store(i.second, std::memory_order_release);
-#else
-            AtomicRef<int>(i.first).store(i.second);
-            //reinterpret_cast< std::atomic<int>& >(*i.first).store(i.second, std::memory_order_release);
-#endif
-        }
+        for (auto w : prev_values)
+            ATOMIC_STORE(T, w.first, w.second);
+        
+        for (auto i : prev_ints) 
+            ATOMIC_STORE(int, i.first, i.second);
     }
 
     inline void clear_and_release() {
