@@ -177,6 +177,10 @@ private:
                 }
             }
         }
+
+        /* 
+         * only write black if the root is red !!
+         */
         Tx.write(&root->c, BLACK);
     }
 

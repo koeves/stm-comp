@@ -20,7 +20,7 @@ class EncounterModeTx : Transaction<T> {
 public:
 
     inline void begin() override {
-        TRACE("ETx " + std::to_string(id) + " STARTED");
+        TRACE("ETx "  << id <<  " STARTED");
     }
 
     inline void write(T *addr, T val) override {
@@ -29,14 +29,14 @@ public:
 
         if (!O->is_locked()) {
             if (!O->lock(O->get_orec(), id)) {
-                TRACE("\tTx " + std::to_string(id) + " COUDLN'T LOCK ADDR ");
+                TRACE("\tTx "  << id <<  " COUDLN'T LOCK ADDR ");
                 throw AbortException();
             }
 
             orecs.insert(O);
         }
         else if (O->get_owner() != id) {
-            TRACE("\tTx " + std::to_string(id) + " ADDR OWNED BY Tx " + std::to_string(O->get_owner()));
+            TRACE("\tTx "  << id <<  " ADDR OWNED BY Tx " << O->get_owner());
             throw AbortException();
         }
 
@@ -56,14 +56,14 @@ public:
 
         if (!O->is_locked()) {
             if (!O->lock(O->get_orec(), id)) {
-                TRACE("\tTx " + std::to_string(id) + " COUDLN'T LOCK ADDR ");
+                TRACE("\tTx "  << id <<  " COUDLN'T LOCK ADDR ");
                 throw AbortException();
             }
 
             orecs.insert(O);
         }
         else if (O->get_owner() != id) {
-            TRACE("\tTx " + std::to_string(id) + " ADDR OWNED BY Tx " + std::to_string(O->get_owner()));
+            TRACE("\tTx "  << id <<  " ADDR OWNED BY Tx " << O->get_owner());
             throw AbortException();
         }
 
@@ -123,13 +123,14 @@ public:
 
         num_retries = 0;
 
-        TRACE("ETx " + std::to_string(id) + " COMMITTED");
+        TRACE("ETx "  << id <<  " COMMITTED");
 
         end = std::chrono::steady_clock::now();
 
-        TRACE("\tETx " + std::to_string(id) + " TOOK " + 
-            std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) +
-            " ms");
+        TRACE("\tETx "  << id <<  " TOOK " 
+            << std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count())
+            << " ms"
+        );
 
         return true;
     }
@@ -140,9 +141,9 @@ public:
 
         num_retries++;
 
-        TRACE("ETx " + std::to_string(id) + " ABORTED");
+        TRACE("ETx "  << id <<  " ABORTED");
         int r = random_wait();
-        TRACE("\tETx " + std::to_string(id) + " SLEEPS " + std::to_string(r) + " MS");
+        TRACE("\tETx "  << id <<  " SLEEPS " << r << " MS");
         std::this_thread::sleep_for(std::chrono::microseconds(r));
     }
 
@@ -205,7 +206,7 @@ private:
     inline bool validate_read_set() {
         for (auto r : reads) {
             if (r.first->get_version() != r.second) {
-                TRACE("\tTLCTx " + std::to_string(id) + " READSET VERSION CHANGED");
+                TRACE("\tTLCTx "  << id <<  " READSET VERSION CHANGED");
                 return false;
             }
         }

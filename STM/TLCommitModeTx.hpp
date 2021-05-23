@@ -20,9 +20,7 @@ class TLCommitModeTx : Transaction<T> {
 public:
 
     inline void begin() override {
-        TRACE("TLCTx " + std::to_string(id) + " STARTED");
-        clear_and_release();
-        if (!validate_read_set()) throw AbortException();
+        TRACE("TLCTx " << id << " STARTED");
         curr = std::chrono::steady_clock::now();
     }
 
@@ -47,7 +45,7 @@ public:
         Orec *O = get_orec(addr);
 
         if (O->is_locked()) {
-            TRACE("\tTLTx " + std::to_string(id) + " READ ADDR LOCKED");
+            TRACE("\tTLTx " << id << " READ ADDR LOCKED");
             throw AbortException();
         }
 
@@ -68,7 +66,7 @@ public:
         Orec *O = get_orec(addr);
 
         if (O->is_locked()) {
-            TRACE("\tTLTx " + std::to_string(id) + " READ ADDR LOCKED");
+            TRACE("\tTLTx " << id << " READ ADDR LOCKED");
             throw AbortException();
         }
 
@@ -97,17 +95,16 @@ public:
         for (auto w : int_writes)
             ATOMIC_STORE(int, w.first, w.second);
 out:
-        TRACE("TLCTx " + std::to_string(id) + " COMMITTED");
+        TRACE("TLCTx " << id << " COMMITTED");
 
         clear_and_release();
         num_retries = 0;
 
         end = std::chrono::steady_clock::now();
 
-        TRACE(
-            "\tETx " + std::to_string(id) + " TOOK " + 
-            std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) +
-            " ms"
+        TRACE("\tETx " << id << " TOOK "
+            << std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) 
+            << " ms"
         );
 
         return true;
@@ -117,22 +114,22 @@ out:
         clear_and_release();
         num_retries++;
 
-        TRACE("TLCTx " + std::to_string(id) + " ABORTED");
+        TRACE("TLCTx " << id << " ABORTED");
 
         int r = random_wait();
-        TRACE("\tTLCTx " + std::to_string(id) + " SLEEPS " + std::to_string(r) + " MS");
+        TRACE("\tTLCTx " << id << " SLEEPS " << r << " MS");
         std::this_thread::sleep_for(std::chrono::microseconds(r));
     }
 
-    inline int get_id() const { return id; };
+    inline int get_id() const { return id; }
 
     struct AbortException {};
 
     TLCommitModeTx() : 
-      id(TLCommitModeTx::id_gen++), 
-      num_retries(0),
-      start(std::chrono::steady_clock::now()) 
-    {};
+        id(TLCommitModeTx::id_gen++), 
+        num_retries(0),
+        start(std::chrono::steady_clock::now()) 
+    {}
 
 private:
     static const int NUM_LOCKS = 2048;
@@ -159,7 +156,7 @@ private:
             for (auto r : reads) {
                 if (r.first == O) {
                     if (!O->lock(r.second, id)) {
-                        TRACE("\tTLCTx " + std::to_string(id) + " READ-WRITE VERSION MISMATCH");
+                        TRACE("\tTLCTx " << id << " READ-WRITE VERSION MISMATCH");
                         throw AbortException();
                     }
                     orecs.insert(O);
@@ -169,7 +166,7 @@ private:
             }
             if (!set) {
                 if (!O->lock(O->get_orec(), id)) {
-                    TRACE("\tTLCTx " + std::to_string(id) + " COULDN'T LOCK ADDR OWNED BY Tx " + std::to_string(O->get_owner()));
+                    TRACE("\tTLCTx " << id << " COULDN'T LOCK ADDR OWNED BY Tx " << O->get_owner());
                     throw AbortException();
                 }
                 orecs.insert(O);
@@ -200,7 +197,7 @@ private:
     inline bool validate_read_set() {
         for (auto r : reads) {
             if (r.first->get_version() != r.second) {
-                TRACE("\tTLCTx " + std::to_string(id) + " READSET VERSION CHANGED");
+                TRACE("\tTLCTx " << id << " READSET VERSION CHANGED");
                 return false;
             }
         }
