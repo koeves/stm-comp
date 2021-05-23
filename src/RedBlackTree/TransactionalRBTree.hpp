@@ -145,7 +145,7 @@ private:
         while (Tx.read(&z->p->c) == RED) {
             if (Tx.read(&z->p) == Tx.read(&z->p->p->l)) {
                 Node<T> *y = Tx.read(&z->p->p->r);
-                if (y->c == RED) {
+                if (Tx.read(&y->c) == RED) {
                     Tx.write(&z->p->c, BLACK);
                     Tx.write(&y->c, BLACK);
                     Tx.write(&z->p->p->c, RED);
@@ -180,8 +180,6 @@ private:
                 }
             }
         }
-        /* Node<T> *r = Tx.read(&root->c);
-        Tx.write(&r, BLACK); */
         Tx.write(&root->c, BLACK);
     }
 
