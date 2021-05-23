@@ -10,11 +10,13 @@
 #include <utility>
 #include <string>
 #include <cstdint>
+#include <cstring>
 #include <setjmp.h>
 #include <any>
 #include <assert.h>
 #include <chrono>
 #include <thread>
+#include <random>
 #include "ThreadStream.hpp"
 
 #define DEBUG 1

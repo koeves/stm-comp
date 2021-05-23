@@ -1,15 +1,13 @@
 #ifndef TX_SKIP_HPP
 #define TX_SKIP_HPP
 
-#include <cstring>
-#include <random>
-#include <iostream>
 #include "SkiplistNode.hpp"
 #include "../STM/EncounterModeTx.hpp"
 #include "../STM/CommitModeTx.hpp"
 #include "../STM/TLCommitModeTx.hpp"
 #include "../STM/Transaction.hpp"
 #include "../STM/Orec.hpp"
+#include "../Utilities/Util.hpp"
 
 #define ___1 EncounterModeTx<SkiplistNode<T>*>
 #define ___2 TLCommitModeTx<SkiplistNode<T>*>
