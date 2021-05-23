@@ -71,7 +71,7 @@ public:
     };
 
     inline bool commit() override {
-        if (writes.empty() || int_writes.empty()) {
+        if (writes.empty() && int_writes.empty()) {
             reads.clear();
             writes.clear();
             int_writes.clear();
