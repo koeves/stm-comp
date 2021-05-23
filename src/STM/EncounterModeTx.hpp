@@ -21,7 +21,7 @@ public:
 
     inline void begin() override {
         TRACE("ETx " + std::to_string(id) + " STARTED");
-    };
+    }
 
     inline void write(T *addr, T val) override {
         /* acquire orec for addr */
@@ -43,10 +43,12 @@ public:
         /* save previous value at addr if not already in map */
         prev_values.try_emplace(addr, *addr);
 
+        if (!validate_read_set()) throw AbortException();
+
         /* store new value */
         ATOMIC_STORE(T, addr, val);
         writes.push_back({O, O->get_version()});
-    };
+    }
 
     inline void write(int *addr, int val) {
         /* acquire orec for addr */
@@ -68,10 +70,12 @@ public:
         /* save previous value at addr if not already in map */
         prev_ints.try_emplace(addr, *addr);
 
+        if (!validate_read_set()) throw AbortException();
+
         /* store new value */
         ATOMIC_STORE(int, addr, val);
         writes.push_back({O, O->get_version()});
-    };
+    }
 
     inline T read(T *addr) override {
         Orec *O = get_orec(addr);
@@ -91,9 +95,11 @@ public:
             reads.push_back({O, O->get_version()});
         }
 
+        if (!validate_read_set()) throw AbortException();
+
         /* orec is unlocked, read value */
         return ATOMIC_LOAD(T, addr);
-    };
+    }
 
     inline int read(int *addr) {
         Orec *O = get_orec(addr);
@@ -106,16 +112,13 @@ public:
             reads.push_back({O, O->get_version()});
         }
 
+        if (!validate_read_set()) throw AbortException();
+
         return ATOMIC_LOAD(int, addr);
-    };
+    }
 
     inline bool commit() override {
-        for (auto r : reads) {
-            if (r.first->get_version() != r.second) {
-                TRACE("\tETx " + std::to_string(id) + " SAW INCONSISTENT READ");
-                throw AbortException();
-            }
-        }  
+        if (!validate_read_set()) throw AbortException();
         clear_and_release();
 
         num_retries = 0;
@@ -123,7 +126,7 @@ public:
         TRACE("ETx " + std::to_string(id) + " COMMITTED");
 
         return true;
-    };
+    }
 
     inline void abort() override {
         unroll_writes();
@@ -135,7 +138,7 @@ public:
         int r = random_wait();
         TRACE("\tETx " + std::to_string(id) + " SLEEPS " + std::to_string(r) + " MS");
         std::this_thread::sleep_for(std::chrono::microseconds(r));
-    };
+    }
 
     inline int get_id() const { return id; };
 
@@ -185,6 +188,16 @@ private:
         int w = dist(mt);
 
         return w;
+    }
+
+    inline bool validate_read_set() {
+        for (auto r : reads) {
+            if (r.first->get_version() != r.second) {
+                TRACE("\tTLCTx " + std::to_string(id) + " READSET VERSION CHANGED");
+                return false;
+            }
+        }
+        return true;
     }
 
 };
