@@ -21,20 +21,19 @@ public:
 
     inline void begin() override {
         TRACE("TLCTx " + std::to_string(id) + " STARTED");
-    };
+    }
 
     inline void write(T *addr, T val) override {
         writes.insert_or_assign(addr, val);
     }
 
     inline T read(T *addr) override {
-        auto it = writes.find(addr);
-        if (it != writes.end())
-            return (*it).second;
+        if (writes.count(addr))
+            return writes.at(addr);
 
         Orec *O = get_orec(addr);
 
-        while (O->is_locked()) {
+        if (O->is_locked()) {
             TRACE("\tTLTx " + std::to_string(id) + " READ ADDR LOCKED");
             throw AbortException();
         }
@@ -89,19 +88,25 @@ public:
 
         clear_and_release();
 
+        num_retries = 0;
+
         return true;
-    };
+    }
 
     inline void abort() override {
         clear_and_release();
         TRACE("TLCTx " + std::to_string(id) + " ABORTED");
-    };
+        num_retries++;
+        int r = random_wait();
+        TRACE("\tTLCTx " + std::to_string(id) + " SLEEPS " + std::to_string(r) + " MS");
+        std::this_thread::sleep_for(std::chrono::microseconds(r));
+    }
 
     inline int get_id() const { return id; };
 
     struct AbortException {};
 
-    TLCommitModeTx() : id(TLCommitModeTx::id_gen++) {};
+    TLCommitModeTx() : id(TLCommitModeTx::id_gen++), num_retries(0) {};
 
 private:
     static const int NUM_LOCKS = 2048;
@@ -112,7 +117,7 @@ private:
         return &TLCommitModeTx::orec_table[(((uintptr_t)addr) >> GRAIN) % NUM_LOCKS];
     }
 
-    int id;
+    int id, num_retries;
     std::vector<std::pair<Orec *, uint64_t>> reads;
     std::unordered_map<T *, T> writes;
     std::unordered_set<Orec *> orecs;
@@ -124,6 +129,16 @@ private:
         reads.clear();
         writes.clear();
         orecs.clear();
+    }
+
+    inline int random_wait() {
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        std::uniform_real_distribution<> dist(0, 1000);
+
+        int w = dist(mt);
+
+        return w;
     }
 
 };

@@ -118,6 +118,8 @@ public:
         }  
         clear_and_release();
 
+        num_retries = 0;
+
         TRACE("ETx " + std::to_string(id) + " COMMITTED");
 
         return true;
@@ -127,14 +129,19 @@ public:
         unroll_writes();
         clear_and_release();
 
+        num_retries++;
+
         TRACE("ETx " + std::to_string(id) + " ABORTED");
+        int r = random_wait();
+        TRACE("\tETx " + std::to_string(id) + " SLEEPS " + std::to_string(r) + " MS");
+        std::this_thread::sleep_for(std::chrono::microseconds(r));
     };
 
     inline int get_id() const { return id; };
 
     struct AbortException {};
 
-    EncounterModeTx() : id(EncounterModeTx::id_gen++) {};
+    EncounterModeTx() : id(EncounterModeTx::id_gen++), num_retries(0) {};
 
 private:
     static const int NUM_LOCKS = 2048;
@@ -145,7 +152,7 @@ private:
         return &EncounterModeTx::orec_table[(((uintptr_t)addr) >> GRAIN) % NUM_LOCKS];
     }
 
-    int id;
+    int id, num_retries;
     std::unordered_map<T*, T> prev_values;
     std::unordered_map<int*, int> prev_ints;
     std::vector<std::pair<Orec *, uint64_t>> reads, writes;
@@ -168,6 +175,16 @@ private:
         reads.clear();
         writes.clear();
         orecs.clear();
+    }
+
+    inline int random_wait() {
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        std::uniform_real_distribution<> dist(0, 1000);
+
+        int w = dist(mt);
+
+        return w;
     }
 
 };
