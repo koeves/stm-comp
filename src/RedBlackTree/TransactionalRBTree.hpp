@@ -19,7 +19,7 @@
 #define __2 TLCommitModeTx<Node<T>*>
 #define __3 CommitModeTx<Node<T>*>
 
-#define TX_ __2
+#define TX_ __1
 
 #define BLACK TransactionalRBTree::B
 #define RED   TransactionalRBTree::R
@@ -110,22 +110,19 @@ private:
 
                 while (x != nil) {
                     y = x;
-                    if (z->key < x->key) x = Tx.read(&x->l);
+                    if (z->key < Tx.read(&x->key)) x = Tx.read(&x->l);
                     else x = Tx.read(&x->r);
                 }
 
                 z->p = y;
 
-                if (y == nil) {
+                if (y == nil) 
                     Tx.write(&root, z);
-                } 
-                else if (z->key < y->key) {
+                else if (z->key < Tx.read(&y->key)) 
                     Tx.write(&y->l, z);
-                } 
-                else {
+                else 
                     Tx.write(&y->r, z);
-                } 
-
+            
                 z->l = nil;
                 z->r = nil;
                 z->c = RED;
