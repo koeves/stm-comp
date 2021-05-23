@@ -21,17 +21,23 @@ public:
 
     inline void begin() override {
         TRACE("TLCTx " << id << " STARTED");
+        assert(writes.size() == 0);
+        assert(reads.size() == 0);
+        assert(int_writes.size() == 0);
+        assert(orecs.size() == 0);
         curr = std::chrono::steady_clock::now();
     }
 
     inline void write(T *addr, T val) override {
-        if (!validate_read_set() || timeout()) throw AbortException();
+        if (timeout() || !validate_read_set()) 
+            throw AbortException();
 
         writes.insert_or_assign(addr, val);
     }
 
     inline void write(int *addr, int val) {
-        if (!validate_read_set() || timeout()) throw AbortException();
+        if (timeout() || !validate_read_set()) 
+            throw AbortException();
 
         int_writes.insert_or_assign(addr, val);
     }
@@ -102,10 +108,9 @@ out:
 
         end = std::chrono::steady_clock::now();
 
-        TRACE("\tETx " << id << " TOOK "
-            << std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) 
-            << " ms"
-        );
+        TRACE("\tTLCTx " << id << " TOOK "
+            << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()
+            << " MS");
 
         return true;
     }
@@ -149,7 +154,7 @@ private:
     std::chrono::steady_clock::time_point curr, start, end;
 
     template<class _Key>
-    inline void lock_writes(std::unordered_map<_Key*, _Key>& writes) {
+    inline void lock_writes(std::unordered_map<_Key *, _Key>& writes) {
         for (auto w : writes) {
             Orec *O = get_orec(w.first);
             bool set = false;
@@ -175,7 +180,7 @@ private:
     }
 
     inline void clear_and_release() {
-        for (auto O : orecs) 
+        for (Orec *O : orecs) 
             O->unlock();
         
         reads.clear();
