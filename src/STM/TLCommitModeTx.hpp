@@ -23,22 +23,24 @@ public:
         TRACE("TLCTx " + std::to_string(id) + " STARTED");
         clear_and_release();
         if (!validate_read_set()) throw AbortException();
-        start = std::chrono::steady_clock::now();
+        curr = std::chrono::steady_clock::now();
     }
 
     inline void write(T *addr, T val) override {
-        if (!validate_read_set()) throw AbortException();
+        if (!validate_read_set() || timeout()) throw AbortException();
 
         writes.insert_or_assign(addr, val);
     }
 
     inline void write(int *addr, int val) {
-        if (!validate_read_set()) throw AbortException();
+        if (!validate_read_set() || timeout()) throw AbortException();
 
         int_writes.insert_or_assign(addr, val);
     }
 
     inline T read(T *addr) override {
+        if (timeout()) throw AbortException();
+
         if (writes.count(addr))
             return writes.at(addr);
 
@@ -58,6 +60,8 @@ public:
     }
 
     inline int read(int *addr) {
+        if (timeout()) throw AbortException();
+
         if (int_writes.count(addr))
             return int_writes.at(addr);
 
@@ -165,7 +169,11 @@ out:
 
     struct AbortException {};
 
-    TLCommitModeTx() : id(TLCommitModeTx::id_gen++), num_retries(0) {};
+    TLCommitModeTx() : 
+      id(TLCommitModeTx::id_gen++), 
+      num_retries(0),
+      start(std::chrono::steady_clock::now()) 
+    {};
 
 private:
     static const int NUM_LOCKS = 2048;
@@ -182,7 +190,7 @@ private:
     std::unordered_map<int *, int> int_writes;
     std::unordered_set<Orec *> orecs;
 
-    std::chrono::steady_clock::time_point start, end;
+    std::chrono::steady_clock::time_point curr, start, end;
 
     inline void clear_and_release() {
         for (auto O : orecs) 
@@ -212,6 +220,14 @@ private:
             }
         }
         return true;
+    }
+
+    inline bool timeout() {
+        auto now = std::chrono::steady_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(now - curr).count();
+        if (duration > 1000) return true;
+
+        return false;
     }
 
 };
