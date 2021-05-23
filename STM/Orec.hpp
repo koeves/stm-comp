@@ -17,7 +17,11 @@
 
 class Orec {
 public:
-    Orec() : rec(1 << 1) {}  /* initial version is 1, lock is unlocked */
+    Orec() : 
+        rec(1 << 1),              /* initial version is 1, lock is unlocked */
+        old_version(1 << 1),
+        owner_id(0)
+    {}
 
     inline uint64_t get_version() {
         if (is_locked()) 
@@ -39,7 +43,9 @@ public:
     }
 
     inline bool lock(uint64_t exp, uint64_t id) {
+        if (owner_id == id) return true;
         if (is_locked()) return false;
+        
         int old = get_version();
 
         if (!rec.compare_exchange_strong(exp, (id << 1) | 1)) {
@@ -56,6 +62,7 @@ public:
 
     inline void unlock() {
         rec.store(((old_version >> 1) + 1) << 1);
+        owner_id = 0;
     }
 
     inline bool is_locked() {
