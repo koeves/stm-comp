@@ -86,51 +86,8 @@ public:
             goto out;
         }
 
-        for (auto w : writes) {
-            Orec *O = get_orec(w.first);
-            bool set = false;
-            for (auto r : reads) {
-                if (r.first == O) {
-                    if (!O->lock(r.second, id)) {
-                        TRACE("\tTLCTx " + std::to_string(id) + " READ-WRITE VERSION MISMATCH");
-                        throw AbortException();
-                    }
-                    orecs.insert(O);
-                    set = true;
-                    break;
-                }
-            }
-            if (!set) {
-                if (!O->lock(O->get_orec(), id)) {
-                    TRACE("\tTLCTx " + std::to_string(id) + " COULDN'T LOCK ADDR OWNED BY Tx " + std::to_string(O->get_owner()));
-                    throw AbortException();
-                }
-                orecs.insert(O);
-            }
-        }
-
-        for (auto w : int_writes) {
-            Orec *O = get_orec(w.first);
-            bool set = false;
-            for (auto r : reads) {
-                if (r.first == O) {
-                    if (!O->lock(r.second, id)) {
-                        TRACE("\tTLCTx " + std::to_string(id) + " READ-WRITE VERSION MISMATCH");
-                        throw AbortException();
-                    }
-                    orecs.insert(O);
-                    set = true;
-                    break;
-                }
-            }
-            if (!set) {
-                if (!O->lock(O->get_orec(), id)) {
-                    TRACE("\tTLCTx " + std::to_string(id) + " COULDN'T LOCK ADDR OWNED BY Tx " + std::to_string(O->get_owner()));
-                    throw AbortException();
-                }
-                orecs.insert(O);
-            }
-        }
+        lock_writes(writes);
+        lock_writes(int_writes);
 
         if (!validate_read_set()) throw AbortException();
 
@@ -147,9 +104,11 @@ out:
 
         end = std::chrono::steady_clock::now();
 
-        TRACE("\tETx " + std::to_string(id) + " TOOK " + 
+        TRACE(
+            "\tETx " + std::to_string(id) + " TOOK " + 
             std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) +
-            " ms");
+            " ms"
+        );
 
         return true;
     }
@@ -192,6 +151,32 @@ private:
 
     std::chrono::steady_clock::time_point curr, start, end;
 
+    template<class _Key>
+    inline void lock_writes(std::unordered_map<_Key*, _Key>& writes) {
+        for (auto w : writes) {
+            Orec *O = get_orec(w.first);
+            bool set = false;
+            for (auto r : reads) {
+                if (r.first == O) {
+                    if (!O->lock(r.second, id)) {
+                        TRACE("\tTLCTx " + std::to_string(id) + " READ-WRITE VERSION MISMATCH");
+                        throw AbortException();
+                    }
+                    orecs.insert(O);
+                    set = true;
+                    break;
+                }
+            }
+            if (!set) {
+                if (!O->lock(O->get_orec(), id)) {
+                    TRACE("\tTLCTx " + std::to_string(id) + " COULDN'T LOCK ADDR OWNED BY Tx " + std::to_string(O->get_owner()));
+                    throw AbortException();
+                }
+                orecs.insert(O);
+            }
+        }
+    }
+
     inline void clear_and_release() {
         for (auto O : orecs) 
             O->unlock();
@@ -225,7 +210,7 @@ private:
     inline bool timeout() {
         auto now = std::chrono::steady_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(now - curr).count();
-        if (duration > 1000) return true;
+        if (duration > 10000) return true;
 
         return false;
     }
