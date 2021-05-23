@@ -21,7 +21,6 @@ public:
 
     inline void begin() override {
         TRACE("ETx " + std::to_string(id) + " STARTED");
-        start = std::chrono::steady_clock::now();
     }
 
     inline void write(T *addr, T val) override {
@@ -142,16 +141,20 @@ public:
         num_retries++;
 
         TRACE("ETx " + std::to_string(id) + " ABORTED");
-        /* int r = random_wait();
+        int r = random_wait();
         TRACE("\tETx " + std::to_string(id) + " SLEEPS " + std::to_string(r) + " MS");
-        std::this_thread::sleep_for(std::chrono::microseconds(r)); */
+        std::this_thread::sleep_for(std::chrono::microseconds(r));
     }
 
     inline int get_id() const { return id; };
 
     struct AbortException {};
 
-    EncounterModeTx() : id(EncounterModeTx::id_gen++), num_retries(0) {};
+    EncounterModeTx() : 
+        id(EncounterModeTx::id_gen++), 
+        num_retries(0),
+        start(std::chrono::steady_clock::now())
+    {};
 
 private:
     static const int NUM_LOCKS = 2048;
@@ -192,7 +195,7 @@ private:
     inline int random_wait() {
         std::random_device rd;
         std::mt19937 mt(rd());
-        std::uniform_real_distribution<> dist(0, 100);
+        std::uniform_real_distribution<> dist(0, 10);
 
         int w = dist(mt);
 
