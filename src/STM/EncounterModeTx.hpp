@@ -21,6 +21,7 @@ public:
 
     inline void begin() override {
         TRACE("ETx " + std::to_string(id) + " STARTED");
+        start = std::chrono::steady_clock::now();
     }
 
     inline void write(T *addr, T val) override {
@@ -125,6 +126,12 @@ public:
 
         TRACE("ETx " + std::to_string(id) + " COMMITTED");
 
+        end = std::chrono::steady_clock::now();
+
+        TRACE("\tETx " + std::to_string(id) + " TOOK " + 
+            std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) +
+            " ms");
+
         return true;
     }
 
@@ -135,9 +142,9 @@ public:
         num_retries++;
 
         TRACE("ETx " + std::to_string(id) + " ABORTED");
-        int r = random_wait();
+        /* int r = random_wait();
         TRACE("\tETx " + std::to_string(id) + " SLEEPS " + std::to_string(r) + " MS");
-        std::this_thread::sleep_for(std::chrono::microseconds(r));
+        std::this_thread::sleep_for(std::chrono::microseconds(r)); */
     }
 
     inline int get_id() const { return id; };
@@ -161,6 +168,8 @@ private:
     std::vector<std::pair<Orec *, uint64_t>> reads, writes;
     std::unordered_set<Orec *> orecs;
 
+    std::chrono::steady_clock::time_point start, end;
+
     inline void unroll_writes() {
         for (auto w : prev_values)
             ATOMIC_STORE(T, w.first, w.second);
@@ -183,7 +192,7 @@ private:
     inline int random_wait() {
         std::random_device rd;
         std::mt19937 mt(rd());
-        std::uniform_real_distribution<> dist(0, 1000);
+        std::uniform_real_distribution<> dist(0, 100);
 
         int w = dist(mt);
 

@@ -23,6 +23,7 @@ public:
         TRACE("TLCTx " + std::to_string(id) + " STARTED");
         clear_and_release();
         if (!validate_read_set()) throw AbortException();
+        start = std::chrono::steady_clock::now();
     }
 
     inline void write(T *addr, T val) override {
@@ -38,8 +39,6 @@ public:
     }
 
     inline T read(T *addr) override {
-        TRACE("\tTLTx " + std::to_string(id) + " READS");
-
         if (writes.count(addr))
             return writes.at(addr);
 
@@ -55,13 +54,10 @@ public:
         if (!validate_read_set()) throw AbortException();
 
         T val = ATOMIC_LOAD(T, addr);
-        TRACE("\tTLTx " + std::to_string(id) + " DONE READS");
         return val;
     }
 
     inline int read(int *addr) {
-        TRACE("\tTLTx " + std::to_string(id) + " READS");
-
         if (int_writes.count(addr))
             return int_writes.at(addr);
 
@@ -77,7 +73,6 @@ public:
         if (!validate_read_set()) throw AbortException();
 
         int val = ATOMIC_LOAD(int, addr);
-        TRACE("\tTLTx " + std::to_string(id) + " DONE READS");
         return val;
     }
 
@@ -146,6 +141,12 @@ out:
         clear_and_release();
         num_retries = 0;
 
+        end = std::chrono::steady_clock::now();
+
+        TRACE("\tETx " + std::to_string(id) + " TOOK " + 
+            std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) +
+            " ms");
+
         return true;
     }
 
@@ -181,6 +182,8 @@ private:
     std::unordered_map<int *, int> int_writes;
     std::unordered_set<Orec *> orecs;
 
+    std::chrono::steady_clock::time_point start, end;
+
     inline void clear_and_release() {
         for (auto O : orecs) 
             O->unlock();
@@ -194,7 +197,7 @@ private:
     inline int random_wait() {
         std::random_device rd;
         std::mt19937 mt(rd());
-        std::uniform_real_distribution<> dist(0, 1000);
+        std::uniform_real_distribution<> dist(0, 100);
 
         int w = dist(mt);
 

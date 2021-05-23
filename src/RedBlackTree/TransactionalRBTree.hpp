@@ -19,7 +19,7 @@
 #define __2 TLCommitModeTx<Node<T>*>
 #define __3 CommitModeTx<Node<T>*>
 
-#define TX_ __1
+#define TX_ __2
 
 #define BLACK TransactionalRBTree::B
 #define RED   TransactionalRBTree::R
