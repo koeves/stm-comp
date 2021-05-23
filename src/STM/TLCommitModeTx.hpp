@@ -21,13 +21,25 @@ public:
 
     inline void begin() override {
         TRACE("TLCTx " + std::to_string(id) + " STARTED");
+        clear_and_release();
+        if (!validate_read_set()) throw AbortException();
     }
 
     inline void write(T *addr, T val) override {
+        if (!validate_read_set()) throw AbortException();
+
         writes.insert_or_assign(addr, val);
     }
 
+    inline void write(int *addr, int val) {
+        if (!validate_read_set()) throw AbortException();
+
+        int_writes.insert_or_assign(addr, val);
+    }
+
     inline T read(T *addr) override {
+        TRACE("\tTLTx " + std::to_string(id) + " READS");
+
         if (writes.count(addr))
             return writes.at(addr);
 
@@ -40,14 +52,39 @@ public:
 
         reads.push_back({O, O->get_version()});
 
-        /* orec is unlocked, read value */
-        return ATOMIC_LOAD(T, addr);
+        if (!validate_read_set()) throw AbortException();
+
+        T val = ATOMIC_LOAD(T, addr);
+        TRACE("\tTLTx " + std::to_string(id) + " DONE READS");
+        return val;
+    }
+
+    inline int read(int *addr) {
+        TRACE("\tTLTx " + std::to_string(id) + " READS");
+
+        if (int_writes.count(addr))
+            return int_writes.at(addr);
+
+        Orec *O = get_orec(addr);
+
+        if (O->is_locked()) {
+            TRACE("\tTLTx " + std::to_string(id) + " READ ADDR LOCKED");
+            throw AbortException();
+        }
+
+        reads.push_back({O, O->get_version()});
+
+        if (!validate_read_set()) throw AbortException();
+
+        int val = ATOMIC_LOAD(int, addr);
+        TRACE("\tTLTx " + std::to_string(id) + " DONE READS");
+        return val;
     }
 
     inline bool commit() override {  
-        if (writes.empty()) {
-            reads.clear();
-            return true;
+        if (writes.empty() && int_writes.empty()) {
+            if (!validate_read_set()) throw AbortException();
+            goto out;
         }
 
         for (auto w : writes) {
@@ -57,7 +94,6 @@ public:
                 if (r.first == O) {
                     if (!O->lock(r.second, id)) {
                         TRACE("\tTLCTx " + std::to_string(id) + " READ-WRITE VERSION MISMATCH");
-                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
                         throw AbortException();
                     }
                     orecs.insert(O);
@@ -74,20 +110,40 @@ public:
             }
         }
 
-        for (auto r : reads) {
-            if (r.first->get_version() != r.second) {
-                TRACE("\tTLCTx " + std::to_string(id) + " READSET VERSION CHANGED");
-                throw AbortException();
+        for (auto w : int_writes) {
+            Orec *O = get_orec(w.first);
+            bool set = false;
+            for (auto r : reads) {
+                if (r.first == O) {
+                    if (!O->lock(r.second, id)) {
+                        TRACE("\tTLCTx " + std::to_string(id) + " READ-WRITE VERSION MISMATCH");
+                        throw AbortException();
+                    }
+                    orecs.insert(O);
+                    set = true;
+                    break;
+                }
+            }
+            if (!set) {
+                if (!O->lock(O->get_orec(), id)) {
+                    TRACE("\tTLCTx " + std::to_string(id) + " COULDN'T LOCK ADDR OWNED BY Tx " + std::to_string(O->get_owner()));
+                    throw AbortException();
+                }
+                orecs.insert(O);
             }
         }
+
+        if (!validate_read_set()) throw AbortException();
 
         for (auto w : writes)
             ATOMIC_STORE(T, w.first, w.second);
 
+        for (auto w : int_writes)
+            ATOMIC_STORE(int, w.first, w.second);
+out:
         TRACE("TLCTx " + std::to_string(id) + " COMMITTED");
 
         clear_and_release();
-
         num_retries = 0;
 
         return true;
@@ -95,8 +151,10 @@ public:
 
     inline void abort() override {
         clear_and_release();
-        TRACE("TLCTx " + std::to_string(id) + " ABORTED");
         num_retries++;
+
+        TRACE("TLCTx " + std::to_string(id) + " ABORTED");
+
         int r = random_wait();
         TRACE("\tTLCTx " + std::to_string(id) + " SLEEPS " + std::to_string(r) + " MS");
         std::this_thread::sleep_for(std::chrono::microseconds(r));
@@ -120,14 +178,16 @@ private:
     int id, num_retries;
     std::vector<std::pair<Orec *, uint64_t>> reads;
     std::unordered_map<T *, T> writes;
+    std::unordered_map<int *, int> int_writes;
     std::unordered_set<Orec *> orecs;
 
     inline void clear_and_release() {
-        for (Orec *O : orecs) 
+        for (auto O : orecs) 
             O->unlock();
         
         reads.clear();
         writes.clear();
+        int_writes.clear();
         orecs.clear();
     }
 
@@ -139,6 +199,16 @@ private:
         int w = dist(mt);
 
         return w;
+    }
+
+    inline bool validate_read_set() {
+        for (auto r : reads) {
+            if (r.first->get_version() != r.second) {
+                TRACE("\tTLCTx " + std::to_string(id) + " READSET VERSION CHANGED");
+                return false;
+            }
+        }
+        return true;
     }
 
 };
