@@ -1,5 +1,5 @@
 /* 
- *  Red-Black Tree datastructure implementation   
+ *  Coarse-grained Red-Black Tree datastructure implementation   
  *        
  *        based on the book:
  *              Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, and Clifford Stein. 2009. 
@@ -10,30 +10,31 @@
 #define RED_BLACK_TREE_HPP
 
 #include <iostream>
+#include <mutex>
 #include "AbstractTree.hpp"
 
 #define _BLACK  Node<T>::Color::BLACK 
 #define _RED    Node<T>::Color::RED  
 
 template<class T = int>
-class RedBlackTree : public AbstractTree<T> { 
+class CoarseGrainedRBTree : public AbstractTree<T> { 
 
 public:
 
-    RedBlackTree() {
+    CoarseGrainedRBTree() {
         nil = new Node<T>;
         nil->color = _BLACK;
         root = nil;
     }
 
-    RedBlackTree(T x) {
+    CoarseGrainedRBTree(T x) {
         root = new Node<T>(x);
         nil = new Node<T>;
         root->l = root->r = root->p = nil->l = nil->r = nil->p = nil;
         root->color = nil->color = _BLACK;
     }
 
-    ~RedBlackTree() {
+    ~CoarseGrainedRBTree() {
         root = empty(root);
         delete nil;
     }
@@ -65,6 +66,8 @@ private:
 
         enum class Color { RED, BLACK } color;
     };
+
+    std::mutex my_lock;
 
     Node<T> *root, *nil;
 
@@ -112,6 +115,8 @@ private:
     }
 
     void insert(Node<T> *z) {
+        std::lock_guard<std::mutex> guard(my_lock);
+
         Node<T> *y = nil;
         Node<T> *x = root;
 
