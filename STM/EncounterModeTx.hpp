@@ -21,6 +21,10 @@ public:
 
     inline void begin() override {
         TRACE("ETx "  << id <<  " STARTED");
+        assert(reads.empty());
+        assert(prev_values.empty());
+        assert(prev_ints.empty());
+        assert(orecs.empty());
     }
 
     inline void write(T *addr, T val) override {
@@ -47,7 +51,6 @@ public:
 
         /* store new value */
         ATOMIC_STORE(T, addr, val);
-        writes.push_back({O, O->get_version()});
     }
 
     inline void write(int *addr, int val) {
@@ -74,7 +77,6 @@ public:
 
         /* store new value */
         ATOMIC_STORE(int, addr, val);
-        writes.push_back({O, O->get_version()});
     }
 
     inline T read(T *addr) override {
@@ -83,11 +85,6 @@ public:
         /* check if orec for addr is taken and is not held by us */
         if (orecs.count(O) == 0) {
             if (O->is_locked()) {
-                /* spin while orec is locked */
-                //while(O->is_locked());
-                //reads.push_back({O, O->get_version()});
-
-                /* or abort */
                 throw AbortException();
             }
         }
@@ -120,7 +117,6 @@ public:
     inline bool commit() override {
         if (!validate_read_set()) throw AbortException();
         clear_and_release();
-
         num_retries = 0;
 
         TRACE("ETx "  << id <<  " COMMITTED");
@@ -140,11 +136,6 @@ public:
         clear_and_release();
 
         num_retries++;
-
-        TRACE("ETx "  << id <<  " ABORTED");
-        int r = random_wait();
-        TRACE("\tETx "  << id <<  " SLEEPS " << r << " MS");
-        std::this_thread::sleep_for(std::chrono::microseconds(r));
     }
 
     inline int get_id() const { return id; };
@@ -169,17 +160,18 @@ private:
     int id, num_retries;
     std::unordered_map<T*, T> prev_values;
     std::unordered_map<int*, int> prev_ints;
-    std::vector<std::pair<Orec *, uint64_t>> reads, writes;
+    std::vector<std::pair<Orec *, uint64_t>> reads;
     std::unordered_set<Orec *> orecs;
 
     std::chrono::steady_clock::time_point start, end;
 
     inline void unroll_writes() {
-        for (auto w : prev_values)
-            ATOMIC_STORE(T, w.first, w.second);
-        
-        for (auto i : prev_ints) 
-            ATOMIC_STORE(int, i.first, i.second);
+        for (auto w : prev_values) {
+            if (w.first) ATOMIC_STORE(T, w.first, w.second);
+        }
+        for (auto w : prev_ints) {
+            if (w.first) ATOMIC_STORE(int, w.first, w.second);
+        }
     }
 
     inline void clear_and_release() {
@@ -189,7 +181,6 @@ private:
         prev_values.clear();
         prev_ints.clear();
         reads.clear();
-        writes.clear();
         orecs.clear();
     }
 
