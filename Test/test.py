@@ -4,13 +4,22 @@ from runner import Runner
 
 if __name__ == "__main__":
 
-#RBTREE
+    # RED-BLACK TREE
 
-    # encounter order: 1000 insert
-    r = Runner('test_etx_1000')
-    r.run(10)
+    r = Runner('rbt_etx_1000')
+    r.run(100)
     r.write_csv()
 
+    """ r = Runner('rbt_etx_tests_100000')
+    r.run(100)
+    r.write_csv()
 
-#SKIPLIST
+    #SKIPLIST
 
+    r = Runner('skip_etx_tests_1000')
+    r.run(100)
+    r.write_csv()
+
+    r = Runner('skip_etx_tests_100000')
+    r.run(100)
+    r.write_csv() """
