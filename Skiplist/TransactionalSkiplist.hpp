@@ -4,16 +4,14 @@
 #include "SkiplistNode.hpp"
 #include "../STM/EncounterModeTx.hpp"
 #include "../STM/CommitModeTx.hpp"
-#include "../STM/TLCommitModeTx.hpp"
 #include "../STM/Transaction.hpp"
 #include "../STM/Orec.hpp"
 #include "../Utilities/Util.hpp"
 
 #define ___1 EncounterModeTx<SkiplistNode<T>*>
-#define ___2 TLCommitModeTx<SkiplistNode<T>*>
-#define ___3 CommitModeTx<SkiplistNode<T>*>
+#define ___2 CommitModeTx<SkiplistNode<T>*>
 
-#define TX__ ___1
+#define TX__ ___2
 
 template<class T = int>
 class TransactionalSkiplist {
@@ -84,7 +82,7 @@ private:
             try {
                 Tx.begin();
 
-                SkiplistNode<T> *curr = head;
+                SkiplistNode<T> *curr = Tx.read(&head);
                 SkiplistNode<T> *update[MAX_LEVEL + 1] = {0};
 
                 for (int i = Tx.read(&level); i >= 0; i--) {

@@ -13,12 +13,10 @@
 #include "AbstractTree.hpp"
 #include "../STM/EncounterModeTx.hpp"
 #include "../STM/CommitModeTx.hpp"
-#include "../STM/TLCommitModeTx.hpp"
 #include "../Utilities/Util.hpp"
 
 #define __1 EncounterModeTx<Node<T>*>
-#define __2 TLCommitModeTx<Node<T>*>
-#define __3 CommitModeTx<Node<T>*>
+#define __2 CommitModeTx<Node<T>*>
 
 #define TX_ __1
 
