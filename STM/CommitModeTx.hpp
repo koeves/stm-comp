@@ -15,16 +15,12 @@
 #include "Orec.hpp"
 
 template<class T = uintptr_t>
-class TLCommitModeTx : Transaction<T> {
+class CommitModeTx : public Transaction<T> {
 
 public:
 
     inline void begin() override {
         TRACE("TLCTx " << id << " STARTED");
-        assert(writes.size() == 0);
-        assert(reads.size() == 0);
-        assert(int_writes.size() == 0);
-        assert(orecs.size() == 0);
         curr = std::chrono::steady_clock::now();
     }
 
@@ -93,13 +89,18 @@ public:
         lock_writes(writes);
         lock_writes(int_writes);
 
+        for (auto w : writes) {
+            TRACE("ADDR: " << w.first << " VAL: " << w.second << " CURR: " << *w.first);
+        }
+
         if (!validate_read_set()) throw AbortException();
 
         for (auto w : writes)
             ATOMIC_STORE(T, w.first, w.second);
-
+            
         for (auto w : int_writes)
             ATOMIC_STORE(int, w.first, w.second);
+
 out:
         TRACE("TLCTx " << id << " COMMITTED");
 
@@ -121,17 +122,17 @@ out:
 
         TRACE("TLCTx " << id << " ABORTED");
 
-        int r = random_wait();
+        /* int r = random_wait();
         TRACE("\tTLCTx " << id << " SLEEPS " << r << " MS");
-        std::this_thread::sleep_for(std::chrono::microseconds(r));
+        std::this_thread::sleep_for(std::chrono::microseconds(r)); */
     }
 
     inline int get_id() const { return id; }
 
     struct AbortException {};
 
-    TLCommitModeTx() : 
-        id(TLCommitModeTx::id_gen++), 
+    CommitModeTx() : 
+        id(CommitModeTx::id_gen++), 
         num_retries(0),
         start(std::chrono::steady_clock::now()) 
     {}
@@ -142,14 +143,14 @@ private:
     static inline std::atomic<uint64_t> id_gen {1};
     static inline Orec orec_table[NUM_LOCKS];
     static inline Orec *get_orec(void *addr) {
-        return &TLCommitModeTx::orec_table[(((uintptr_t)addr) >> GRAIN) % NUM_LOCKS];
+        return &CommitModeTx::orec_table[(((uintptr_t)addr) >> GRAIN) % NUM_LOCKS];
     }
 
     int id, num_retries;
     std::vector<std::pair<Orec *, uint64_t>> reads;
     std::unordered_map<T *, T> writes;
     std::unordered_map<int *, int> int_writes;
-    std::unordered_set<Orec *> orecs;
+    std::vector<Orec *> orecs;
 
     std::chrono::steady_clock::time_point curr, start, end;
 
@@ -164,7 +165,7 @@ private:
                         TRACE("\tTLCTx " << id << " READ-WRITE VERSION MISMATCH");
                         throw AbortException();
                     }
-                    orecs.insert(O);
+                    orecs.push_back(O);
                     set = true;
                     break;
                 }
@@ -174,8 +175,9 @@ private:
                     TRACE("\tTLCTx " << id << " COULDN'T LOCK ADDR OWNED BY Tx " << O->get_owner());
                     throw AbortException();
                 }
-                orecs.insert(O);
+                orecs.push_back(O);
             }
+            assert(O->is_locked() && O->get_owner() == id);
         }
     }
 
@@ -212,7 +214,10 @@ private:
     inline bool timeout() {
         auto now = std::chrono::steady_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(now - curr).count();
-        if (duration > 10000) return true;
+        if (duration > 100000) {
+            TRACE("\tTLTx " << id << " TIMED OUT");
+            return true;
+        } 
 
         return false;
     }
