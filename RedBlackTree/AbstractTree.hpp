@@ -8,9 +8,9 @@
 
 template<class T = int>
 struct AbstractTree {  
-    virtual void insert(T x) {}
-    virtual void remove(T x) {}
-    virtual void print() const {}
+    virtual void insert(T x)   = 0;
+    virtual void remove(T x)   = 0;
+    virtual void print() const = 0;
 };
 
 #endif

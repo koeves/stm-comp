@@ -41,7 +41,7 @@ public:
 
     void insert(T x) override { insert(new Node<T>(x)); }
 
-    void remove(T x) override { remove(find(root, x)); }
+    void remove(T x) override {}
 
     void print() const override { print_inorder(root); }
 
@@ -93,25 +93,6 @@ private:
                   << "r: " << ((t->r == nil) ? "NIL" : std::to_string(t->r->key)) << std::endl;
 
         print_inorder(t->r);
-    }
-
-    Node<T> *find_min(Node<T> *t) {
-        if (t == nil) return t;
-        else if (t->l == nil) return t;
-        else return find_min(t->l);
-    }
-
-    Node<T> *find_max(Node<T> *t) {
-        if (t == nil) return t;
-        else if (t->r == nil) return t;
-        else return find_min(t->r);
-    }
-
-    Node<T> *find(Node<T> *t, T x) {
-        if(t == nil) return t;
-        else if(x < t->key) return find(t->l, x);
-        else if(x > t->key) return find(t->r, x);
-        else return t;
     }
 
     void insert(Node<T> *z) {
@@ -176,109 +157,6 @@ private:
             }
         }
         root->color = _BLACK;
-    }
-
-    void remove(Node<T> *z) {
-        Node<T> *y = z, *x;
-        enum Node<T>::Color y_orig_color = y->color;
-
-        if (z->l == nil) {
-            x = z->r;
-            transplant(z, z->r);
-        }
-        else if (z->r == nil) {
-            x = z->l;
-            transplant(z, z->l);
-        }
-        else {
-            y = find_min(z->r);
-            y_orig_color = y->color;
-            x = y->r;
-            if (y->p == z) {
-                x->p = y;
-            }
-            else {
-                transplant(y, y->r);
-                y->r = z->r;
-                y->r->p = y;
-            }
-            transplant(z, y);
-            y->l = z->l;
-            y->l->p = y;
-            y->color = z->color;
-        }
-
-        if (y_orig_color == _BLACK)
-            delete_fixup(x);
-
-        delete z;
-    }
-
-    void delete_fixup(Node<T> *x) {
-        while (x != root && x->color == _BLACK) {
-            if (x == x->p->l) {
-                Node<T> *w = x->p->r;
-                if (w->color == _RED) {
-                    w->color = _BLACK;
-                    x->p->color = _RED;
-                    left_rotate(x->p);
-                    w = x->p->r;
-                }
-
-                if (w->l->color == _BLACK && w->r->color == _BLACK) {
-                    w->color = _RED;
-                    x = x->p;
-                }
-                else if (w->r->color == _BLACK) {
-                    w->l->color = _BLACK;
-                    w->color = _RED;
-                    right_rotate(w);
-                    w = x->p->r;
-                }
-                else {
-                    w->color = x->p->color;
-                    x->p->color = _BLACK;
-                    w->r->color = _BLACK;
-                    left_rotate(x->p);
-                    x = root;
-                }
-            }
-            else {
-                Node<T> *w = x->p->l;
-                if (w->color == _RED) {
-                    w->color = _BLACK;
-                    x->p->color = _RED;
-                    right_rotate(x->p);
-                    w = x->p->l;
-                }
-
-                if (w->r->color == _BLACK && w->l->color == _BLACK) {
-                    w->color = _RED;
-                    x = x->p;
-                }
-                else if (w->l->color == _BLACK) {
-                    w->r->color = _BLACK;
-                    w->color = _RED;
-                    left_rotate(w);
-                    w = x->p->l;
-                }
-                else {
-                    w->color = x->p->color;
-                    x->p->color = _BLACK;
-                    w->l->color = _BLACK;
-                    right_rotate(x->p);
-                    x = root;
-                }
-            }
-        }
-        x->color = _BLACK;
-    }
-
-    void transplant(Node<T> *u, Node<T> *v) {
-        if (u->p == nil) root = v;
-        else if (u == u->p->l) u->p->l = v;
-        else u->p->r = v;
-        v->p = u->p;
     }
 
     void left_rotate(Node<T> *x) {

@@ -14,6 +14,7 @@
 #include "../STM/EncounterModeTx.hpp"
 #include "../STM/CommitModeTx.hpp"
 #include "../STM/TLCommitModeTx.hpp"
+#include "../Utilities/Util.hpp"
 
 #define __1 EncounterModeTx<Node<T>*>
 #define __2 TLCommitModeTx<Node<T>*>
@@ -44,6 +45,8 @@ public:
     }
 
     void insert(T x) override { insert(new Node<T>(x)); }
+
+    void remove(T x) override {}
 
     void print() const override { print_inorder(root); }
 
@@ -148,11 +151,11 @@ private:
                     Tx.write(&z->p->p->c, RED);
                     z = Tx.read(&z->p->p);
                 }
-                else if (z == Tx.read(&z->p->r)) {
-                    z = Tx.read(&z->p);
-                    left_rotate(Tx, z);
-                }
                 else {
+                    if (z == Tx.read(&z->p->r)) {
+                        z = Tx.read(&z->p);
+                        left_rotate(Tx, z);
+                    }
                     Tx.write(&z->p->c, BLACK);
                     Tx.write(&z->p->p->c, RED);
                     right_rotate(Tx, z->p->p);
@@ -166,11 +169,11 @@ private:
                     Tx.write(&z->p->p->c, RED);
                     z = Tx.read(&z->p->p);
                 }
-                else if (z == Tx.read(&z->p->l)) {
-                    z = Tx.read(&z->p);
-                    right_rotate(Tx, z);
-                }
                 else {
+                    if (z == Tx.read(&z->p->l)) {
+                        z = Tx.read(&z->p);
+                        right_rotate(Tx, z);
+                    }
                     Tx.write(&z->p->c, BLACK);
                     Tx.write(&z->p->p->c, RED);
                     left_rotate(Tx, z->p->p);
@@ -181,7 +184,11 @@ private:
         /* 
          * only write black if the root is red !!
          */
-        Tx.write(&root->c, BLACK);
+        /* TRACE("ROOT: " << &root << "\nROOT->COLOR: " << &root->c << "\nBLACK: " << BLACK << "\nRED: " << RED
+             << "\nNEW NODE: " << z << "\nNIL: " << nil); */
+
+        if (Tx.read(&root->c) == RED)
+            Tx.write(&root->c, BLACK);
     }
 
     void left_rotate(TX_& Tx, Node<T> *x) {
