@@ -15,15 +15,17 @@ class Runner:
         for _ in range(0, 100):
             for _ in range(0, times):
                 start = time.time()
-                subprocess.call([self.executable], stdout=subprocess.DEVNULL)
+                subprocess.call([self.executable], 
+                                stdout=subprocess.DEVNULL, 
+                                stderr=subprocess.DEVNULL)
                 self.times.append(round((time.time() - start) * 10 ** 6))
 
-            self.export.append(self.get_stats())
+            self.export.append(self.get_stats(self.times))
             self.times.clear()
 
 
-    def get_stats(self):
-        return [statistics.mean(self.times), round(statistics.stdev(self.times), 2)]
+    def get_stats(self, times):
+        return [statistics.mean(times), round(statistics.stdev(times), 2)]
 
 
     def write_csv(self):
@@ -32,4 +34,4 @@ class Runner:
             writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer.writeheader()
             for row in self.export:
-                writer.writerow({'mean': row[0], 'sd': row[1]})
+                writer.writerow({fieldnames[0]: row[0], fieldnames[1]: row[1]})
