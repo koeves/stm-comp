@@ -2,11 +2,10 @@ import time
 import subprocess
 import statistics
 import csv
-import sys
 
 class Runner:
-    #nthreads = [1, 8, 16, 32, 64, 128]
-    nthreads = [1,2,3,4]
+    nthreads = [1, 4, 8, 16, 32]
+    #nthreads = [1,2,3,4]
 
     def __init__(self, name):
         print("Performing tests for: " + name)
@@ -42,3 +41,4 @@ class Runner:
                 writer.writerow({fieldnames[0]: row[0], fieldnames[1]: row[1], fieldnames[2]: row[2]})
             print("Wrote csv: " + self.name)
             
+
