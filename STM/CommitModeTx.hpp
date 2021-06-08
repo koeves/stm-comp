@@ -20,27 +20,32 @@ class CommitModeTx : public Transaction<T> {
 public:
 
     inline void begin() override {
-        TRACE("TLCTx " << id << " STARTED");
         curr = std::chrono::steady_clock::now();
+        TRACE("TLCTx " << id << " STARTED");
+        end = std::chrono::steady_clock::now();
+        std::cout << "BEGIN: " << std::chrono::duration_cast<std::chrono::microseconds>(end - curr).count() << '\n';
     }
 
     inline void write(T *addr, T val) override {
-        if (timeout() || !validate_read_set()) 
+        start = std::chrono::steady_clock::now();
+        if (!validate_read_set()) 
             throw AbortException();
 
         writes.insert_or_assign(addr, val);
+
+        end = std::chrono::steady_clock::now();
+        std::cout << "WRITE: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << '\n';
     }
 
     inline void write(int *addr, int val) {
-        if (timeout() || !validate_read_set()) 
+        if (!validate_read_set()) 
             throw AbortException();
 
         int_writes.insert_or_assign(addr, val);
     }
 
     inline T read(T *addr) override {
-        if (timeout()) throw AbortException();
-
+        start = std::chrono::steady_clock::now();
         if (writes.count(addr))
             return writes.at(addr);
 
@@ -56,12 +61,13 @@ public:
         if (!validate_read_set()) throw AbortException();
 
         T val = ATOMIC_LOAD(T, addr);
+
+        end = std::chrono::steady_clock::now();
+        std::cout << "READ: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << '\n';
         return val;
     }
 
     inline int read(int *addr) {
-        if (timeout()) throw AbortException();
-
         if (int_writes.count(addr))
             return int_writes.at(addr);
 
@@ -81,6 +87,8 @@ public:
     }
 
     inline bool commit() override {  
+        start = std::chrono::steady_clock::now();
+
         if (writes.empty() && int_writes.empty()) {
             if (!validate_read_set()) throw AbortException();
             goto out;
@@ -89,9 +97,9 @@ public:
         lock_writes(writes);
         lock_writes(int_writes);
 
-        for (auto w : writes) {
-            TRACE("ADDR: " << w.first << " VAL: " << w.second << " CURR: " << *w.first);
-        }
+       // for (auto w : writes) {
+       //    TRACE("ADDR: " << w.first << " VAL: " << w.second << " CURR: " << *w.first);
+       // }
 
         if (!validate_read_set()) throw AbortException();
 
@@ -108,15 +116,17 @@ out:
         num_retries = 0;
 
         end = std::chrono::steady_clock::now();
+        std::cout << "COMMIT: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << '\n';
 
-        TRACE("\tTLCTx " << id << " TOOK "
+        /* TRACE("\tTLCTx " << id << " TOOK "
             << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()
-            << " MS");
+            << " MS"); */
 
         return true;
     }
 
     inline void abort() override {
+        start = std::chrono::steady_clock::now();
         clear_and_release();
         num_retries++;
 
@@ -125,6 +135,8 @@ out:
         /* int r = random_wait();
         TRACE("\tTLCTx " << id << " SLEEPS " << r << " MS");
         std::this_thread::sleep_for(std::chrono::microseconds(r)); */
+        end = std::chrono::steady_clock::now();
+        std::cout << "ABORT: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << '\n';
     }
 
     inline int get_id() const { return id; }
@@ -211,7 +223,7 @@ private:
         return true;
     }
 
-    inline bool timeout() {
+    /* inline bool timeout() {
         auto now = std::chrono::steady_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(now - curr).count();
         if (duration > 100000) {
@@ -220,7 +232,7 @@ private:
         } 
 
         return false;
-    }
+    } */
 
 };
 

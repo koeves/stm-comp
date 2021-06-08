@@ -20,14 +20,18 @@ class EncounterModeTx : Transaction<T> {
 public:
 
     inline void begin() override {
+        start = std::chrono::steady_clock::now();
         TRACE("ETx "  << id <<  " STARTED");
         assert(reads.empty());
         assert(prev_values.empty());
         assert(prev_ints.empty());
         assert(orecs.empty());
+        end = std::chrono::steady_clock::now();
+        std::cout << "BEGIN: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << '\n';
     }
 
     inline void write(T *addr, T val) override {
+        start = std::chrono::steady_clock::now();
         /* acquire orec for addr */
         Orec *O = get_orec(addr);
 
@@ -51,6 +55,9 @@ public:
 
         /* store new value */
         ATOMIC_STORE(T, addr, val);
+
+        end = std::chrono::steady_clock::now();
+        std::cout << "WRITE: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << '\n';
     }
 
     inline void write(int *addr, int val) {
@@ -80,6 +87,7 @@ public:
     }
 
     inline T read(T *addr) override {
+        start = std::chrono::steady_clock::now();
         Orec *O = get_orec(addr);
 
         /* check if orec for addr is taken and is not held by us */
@@ -95,6 +103,8 @@ public:
         if (!validate_read_set()) throw AbortException();
 
         /* orec is unlocked, read value */
+        end = std::chrono::steady_clock::now();
+        std::cout << "READ: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << '\n';
         return ATOMIC_LOAD(T, addr);
     }
 
@@ -115,6 +125,7 @@ public:
     }
 
     inline bool commit() override {
+        start = std::chrono::steady_clock::now();
         if (!validate_read_set()) throw AbortException();
         clear_and_release();
         num_retries = 0;
@@ -127,15 +138,21 @@ public:
             << std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count())
             << " ms"
         );
+        end = std::chrono::steady_clock::now();
+        std::cout << "COMMIT: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << '\n';
 
         return true;
     }
 
     inline void abort() override {
+        start = std::chrono::steady_clock::now();
         unroll_writes();
         clear_and_release();
 
         num_retries++;
+        end = std::chrono::steady_clock::now();
+        std::cout << "ABORT: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << '\n';
+
     }
 
     inline int get_id() const { return id; };

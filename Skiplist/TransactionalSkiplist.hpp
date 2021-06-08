@@ -46,6 +46,8 @@ public:
         }
     }
 
+    int nthreads, ninserts;
+
 private:
 
     SkiplistNode<T> *head;
@@ -77,10 +79,13 @@ private:
 
         TX__ Tx;
         bool done = false;
-
+        //int num_aborts = 0, num_runs = 0;
+        //std::string filename = "skip_ctx_aborts_100000_"+std::to_string(nthreads)+".txt";
+        //std::ofstream outfile(filename, std::ios_base::app);
         while (!done) {
             try {
                 Tx.begin();
+                //num_runs++;
 
                 SkiplistNode<T> *curr = Tx.read(&head);
                 SkiplistNode<T> *update[MAX_LEVEL + 1] = {0};
@@ -111,10 +116,13 @@ private:
                 }
 
                 done = Tx.commit();
+                
+                //outfile << (double)num_aborts/num_runs << '\n';
             }
             catch (AbortException&) {
                 Tx.abort();
                 done = false;
+                //num_aborts++;
             }
         }
     }
