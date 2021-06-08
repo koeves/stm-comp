@@ -1,0 +1,113 @@
+\documentclass[12pt, a4paper, twoside]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{tabularx}
+\usepackage{placeins}
+\usepackage{wrapfig}
+\usepackage[newfloat]{minted}
+\usepackage{graphicx}
+\graphicspath{{images/}}
+
+\usepackage{amsmath}
+\usepackage{parskip}
+\usepackage{hyperref}
+\usepackage{parcolumns}
+\usepackage{algpseudocode}
+\usepackage[ruled]{algorithm}
+\usepackage[sorting=none]{biblatex}
+\addbibresource{cite.bib}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\renewcommand{\chaptermark}[1]{\markboth{\MakeUppercase{#1}}{}}
+\fancyhead{}
+\fancyhead[RO, LE]{\leftmark}
+
+\usepackage{listings}
+\lstdefinestyle{mystyle}{
+    basicstyle=\small,
+    language=C,
+    numberstyle=\tiny,
+    numbers=left,                    
+    numbersep=5pt
+}
+\lstset{style=mystyle}
+
+\providecommand{\keywords}[1]
+{
+  \small	
+  \textbf{\textit{Keywords---}} #1
+}
+
+\usepackage{titlesec}
+\titleformat{\chapter}{\bf\huge}{\thechapter.}{20pt}{\huge\bf}
+
+\usepackage{epigraph}
+\setlength\epigraphwidth{.7\textwidth}
+\setlength\epigraphrule{0pt}
+
+%\renewcommand{\familydefault}{\sfdefault}
+\renewcommand{\topfraction}{.75}
+\renewcommand{\floatpagefraction}{.8}%
+
+\begin{document}
+
+\title{
+{Concurrent Datastructure Design for\\ Software Transactional Memory} \\
+\vspace{1cm}
+{\large Vrije Universiteit Amsterdam} \\ 
+{\large Bachelor Project} \\
+\vspace{1.3cm}
+{\includegraphics[height=28mm]{vu-griffioen.pdf}}}
+
+\author{Daniel Köves \\
+        \texttt{\href{mailto:d.koves@student.vu.nl}{d.koves@student.vu.nl}}\vspace*{0.5cm}\\
+\setlength{\tabcolsep}{12pt}
+\begin{tabular}{c c}
+  {\normalsize Supervisor}   & {\normalsize Second reader}  \\
+  {\normalsize Prof. Wan Fokkink}   & {\normalsize Dr. Thilo Kielmann}
+\end{tabular}
+}
+
+
+\date{June 2021}
+
+\maketitle
+
+\pagenumbering{roman}
+\tableofcontents
+
+\listoffigures
+
+\newpage
+
+
+\begin{abstract}
+\thispagestyle{plain}
+\setcounter{page}{4}
+The following paper set out to investigate how transactional memory can be applied to concurrent datastructure design. Specifically, how it can provide a clean and accessible interface in replacement of locks and built on top of lock-free primitives for concurrent algorithms. Two of such datastructures are implemented, a transactional Red-Black Tree and a Skiplist, with underlying encounter-order and commit-time transactions taking care of concurrent insertions. Results show that word-based commit-time transactions cannot be successfully applied to Red-Black Trees without imposing an unnatural design on the datastructure, due to the fact that the commit-time transaction's write-list consist of (address, value) 2-tuples that are oblivious to chain of dependencies between the writes. For Skiplists, no such restrictions exist, with both encounter-order and commit-time transactions exhibiting optimal scaling properties. As opposed to findings of other papers like \cite{tl, tl2}, which promote the use of the commit-time mechanism for high-contention, this paper finds that due to the large amount of aborting transactions, which are expected in case of high-contention, and the more expensive commit-time API operations, the encounter-order locking mechanism outperforms commit-time locking on all metrics with a factor of two. Furthermore, it can be empirically concluded that the use of the transactional algorithm design is much less error-prone than its lock based counterpart, without further restrictions on its structure posed by lock-free primitives. While performance-wise, hand-crafted concurrent datastructures might prove to be more effictive, the transactional design can open up the process to a wider range of programmers by providing a straight-forward abstraction for concurrency.
+
+\keywords{transactional memory, concurrent datastructures, parallelization}
+\end{abstract}
+
+\pagenumbering{arabic}
+\chapter{Introduction}
+\input{chapters/1-intro}
+
+\chapter{Terminology}
+\input{chapters/2-term}
+
+\chapter{Literature Review}
+\input{chapters/3-litrev}
+
+\chapter{Implementation}
+\input{chapters/4-impl}
+
+\chapter{Evaluation}
+\input{chapters/5-eval}
+
+\chapter{Conclusion}
+\input{chapters/6-concl}
+
+\printbibliography[heading=bibintoc]
+
+\end{document}
