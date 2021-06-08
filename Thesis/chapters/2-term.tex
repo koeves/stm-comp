@@ -1,0 +1,41 @@
+This section aims to give an overview of the terminology used throughout the paper. Firstly, progress conditions are detailed, i.e. different implementation strategies concerning concurrent methods of an object. Then, the idea behind the two most common lock-free hardware synchronisation primitives is described.
+
+\section{Progress Conditions}
+Progress conditions describe different ways an object's method implementation can act on concurrent pending invocations. A method implementation is said to be \textbf{non-blocking} if threads are able to make progress even when one thread is delayed\cite{book}. An implementation is \textbf{blocking} if delaying one thread can prevent others from making progress\cite{book}.
+
+\subsection{Non-blocking progress conditions}
+A method implementation is \textbf{wait-free} if a thread with a pending invocation to such a method keeps taking steps, it will finish in a finite number of steps. This guarantees that every thread makes progress if it takes steps\cite{book}. In practice, this is often inefficient and wait-freedom can be relaxed in multiple ways.
+
+One such way is to settle for \textbf{lock-free} methods which require that only some threads make progress that has a pending invocation to a lock-free method of an object. This guarantees that the whole system makes progress, even though some thread might be delayed.
+
+Another way to relax the wait-free condition is to guarantee progress under certain assumptions on how the threads are scheduled. A method implementation is \textbf{obstruction-free} if it is guaranteed that a thread finishes in a finite number of steps after any point it executes \textit{in isolation}, i.e. in a period when no other threads take steps.
+
+\subsection{Blocking progress conditions}
+When relaxing the non-blocking property, the following grouping can be made. A method implementation is \textbf{starvation-free} if a thread is guaranteed to complete in a finite number of steps when all other threads with pending invocations are making progress.
+
+Finally, a method implementation is \textbf{deadlock-free}, whenever there is an invocation to that method and all threads with invocations are making progress, \textit{some} will finish in a finite number of steps\cite{book}.
+
+\section{Hardware Synchronisation}
+\label{subsection:sync}
+To achieve synchronisation, most modern processor architectures provide one of the two following primitives: the \textit{Compare-and-Swap} or \textit{Load-link/Store-conditional} instructions.
+
+\subsection{Compare-and-Swap}
+Compare-and-Swap (or \textit{CAS} for short), shown in Algorithm \ref{alg:cas}, is an instruction that takes three parameters: an address $\mathcal{A}$ in memory, and expected value $\mathcal{E}$ and an new value $\mathcal{V}$ for for that address. Compare-and-Swap executes \textit{atomically} the following actions: in case address $\mathcal{A}$ contains $\mathcal{E}$, $\mathcal{A}$ is updated to $\mathcal{V}$ and true is returned. Else, nothing is changed and false is returned. 
+
+\begin{algorithm}
+\label{alg:cas}
+\caption{\textit{boolean atomically} CAS($\mathcal{A}, \mathcal{E}, \mathcal{V}$)}
+\begin{algorithmic}[1]
+    \If {*$\mathcal{A} = \mathcal{E}$}
+        \State *$\mathcal{A} \gets \mathcal{V}$
+    \Else
+        \State \Return false
+    \EndIf
+    \State \Return true
+\end{algorithmic}
+\end{algorithm}
+
+An interesting inherent problem of this approach, known as the ABA problem, occurs when two concurrently executing threads try to modify the same location. Consider the scenario when thread $T_1$ reads location $\mathcal{L}$ and sees that its current value is $A$. Thread $T_1$ is preempted and thread $T_2$ is allowed to execute. Thread $T_2$ reads location $\mathcal{L}$, modifies its value to $B$, and then back to $A$ after doing some work. When thread $T_1$ is scheduled back, it sees that the value of location $\mathcal{L}$ has not changed and continues executing. The execution scenario can prove to be incorrect, since thread $T_1$ is unaware of the undetected change of values to $B$ (and potentially other side effects of that action) at location $\mathcal{L}$.
+ 
+\subsection{Load-link/Store-conditional}
+Another way to achieve synchronisation, which does not pose ABA-like issues, is with a pair of instructions Load-link \texttt{LL} and Store-conditional \texttt{SC}. The \texttt{LL} instruction loads the value stored in address $\mathcal{A}$. Subsequent \texttt{SC} call to that address with a new value $\mathcal{V}$ succeeds only if the value of $\mathcal{A}$ has not changed since the corresponding \texttt{LL} call. The \texttt{SC} instruction fails if the value at $\mathcal{A}$ has changed since the \texttt{LL} call; therefore, also detecting the ABA problem.

@@ -1,0 +1,277 @@
+@inproceedings{herlihy-moss,
+    author = {Herlihy, Maurice and Moss, J. Eliot B.},
+    title = {Transactional Memory: Architectural Support for Lock-Free Data Structures},
+    year = {1993},
+    isbn = {0818638109},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    url = {https://doi-org.vu-nl.idm.oclc.org/10.1145/165123.165164},
+    doi = {10.1145/165123.165164},
+    booktitle = {Proceedings of the 20th Annual International Symposium on Computer Architecture},
+    pages = {289–300},
+    numpages = {12},
+    location = {San Diego, California, USA},
+    series = {ISCA '93}
+}
+
+@inproceedings{shavit-stm,
+    author = {Shavit, Nir and Touitou, Dan},
+    title = {Software Transactional Memory},
+    year = {1995},
+    isbn = {0897917103},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    url = {https://doi.org/10.1145/224964.224987},
+    doi = {10.1145/224964.224987},
+    booktitle = {Proceedings of the Fourteenth Annual ACM Symposium on Principles of Distributed Computing},
+    pages = {204–213},
+    numpages = {10},
+    location = {Ottowa, Ontario, Canada},
+    series = {PODC '95}
+}
+
+
+@INPROCEEDINGS{ennals-stm,
+    author = {Robert Ennals},
+    title = {Software transactional memory should not be obstruction free},
+    booktitle = {In Intel Research Cambridge Tech Report},
+    year = {2006},
+    doi={10.1.1.702.1468}
+}
+
+@article{tl,
+    author = {Dice, David and Shavit, Nir},
+    year = {2006},
+    month = {01},
+    title = {What Really Makes Transactions Faster?},
+    journal = {TRANSACT06 ACM Workshop}
+}
+
+@inproceedings{tl2,
+    author = {Dice, Dave and Shalev, Ori and Shavit, Nir},
+    title = {Transactional Locking II},
+    year = {2006},
+    isbn = {3540446249},
+    publisher = {Springer-Verlag},
+    address = {Berlin, Heidelberg},
+    url = {https://doi.org/10.1007/11864219_14},
+    doi = {10.1007/11864219_14},
+    pages = {194–208},
+    numpages = {15},
+    location = {Stockholm, Sweden},
+    series = {DISC'06}
+}
+
+@inproceedings{OSTM,
+    title={Practical lock-freedom},
+    author={K. Fraser},
+    year={2003},
+    publisher={PhD Thesis, Cambridge University Computer Laboratory}
+}
+
+@inproceedings{DSTM,
+    author = {Herlihy, Maurice and Luchangco, Victor and Moir, Mark and Scherer, William N.},
+    title = {Software Transactional Memory for Dynamic-Sized Data Structures},
+    year = {2003},
+    isbn = {1581137087},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    url = {https://doi.org/10.1145/872035.872048},
+    doi = {10.1145/872035.872048},
+    booktitle = {Proceedings of the Twenty-Second Annual Symposium on Principles of Distributed Computing},
+    pages = {92–101},
+    numpages = {10},
+    location = {Boston, Massachusetts},
+    series = {PODC '03}
+}
+
+@article{ostm2,
+author = {Fraser, Keir and Harris, Tim},
+title = {Concurrent Programming without Locks},
+year = {2007},
+issue_date = {May 2007},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {25},
+number = {2},
+issn = {0734-2071},
+url = {https://doi.org/10.1145/1233307.1233309},
+doi = {10.1145/1233307.1233309},
+journal = {ACM Trans. Comput. Syst.},
+month = may,
+pages = {5–es},
+numpages = {61},
+keywords = {lock-free systems, Concurrency, transactional memory}
+}
+
+@book{book,
+author = {Herlihy, Maurice and Shavit, Nir},
+title = {The Art of Multiprocessor Programming},
+year = {2008},
+isbn = {0123705916},
+publisher = {Morgan Kaufmann Publishers Inc.},
+address = {San Francisco, CA, USA},
+}
+
+@book{introalg,
+author = {Cormen, Thomas H. and Leiserson, Charles E. and Rivest, Ronald L. and Stein, Clifford},
+title = {Introduction to Algorithms, Third Edition},
+year = {2009},
+isbn = {0262033844},
+publisher = {The MIT Press},
+edition = {3rd},
+}
+
+@InProceedings{wait-free-rb,
+author={Natarajan, Aravind and Savoie, Lee H. and Mittal, Neeraj},
+editor={Higashino, Teruo and Katayama, Yoshiaki and Masuzawa, Toshimitsu and Potop-Butucaru, Maria and Yamashita, Masafumi},
+title={Concurrent Wait-Free Red Black Trees},
+booktitle={Stabilization, Safety, and Security of Distributed Systems},
+year={2013},
+publisher={Springer International Publishing},
+pages={45--60},
+isbn={978-3-319-03089-0}
+}
+
+@inproceedings{10.1145/2555243.2555256,
+author = {Natarajan, Aravind and Mittal, Neeraj},
+title = {Fast Concurrent Lock-Free Binary Search Trees},
+year = {2014},
+isbn = {9781450326568},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/2555243.2555256},
+doi = {10.1145/2555243.2555256},
+abstract = {We present a new lock-free algorithm for concurrent manipulation of a binary search tree in an asynchronous shared memory system that supports search, insert and delete operations. In addition to read and write instructions, our algorithm uses (single-word) compare-and-swap (CAS) and bit-test-and-set (SETB) atomic instructions, both of which are commonly supported by many modern processors including Intel~64 and AMD64.In contrast to existing lock-free algorithms for a binary search tree, our algorithm is based on marking edges rather than nodes. As a result, when compared to other lock-free algorithms, modify (insert and delete) operations in our algorithm work on a smaller portion of the tree, thereby reducing conflicts, and execute fewer atomic instructions (one for insert and three for delete). Our experiments indicate that our lock-free algorithm significantly outperforms all other algorithms for a concurrent binary search tree in many cases, especially when contention is high, by as much as 100%.},
+booktitle = {Proceedings of the 19th ACM SIGPLAN Symposium on Principles and Practice of Parallel Programming},
+pages = {317–328},
+numpages = {12},
+keywords = {concurrent data structure, binary search tree, lock-free algorithm},
+location = {Orlando, Florida, USA},
+series = {PPoPP '14}
+}
+
+
+@article{lock-free-rb,
+author = {Natarajan, Aravind and Mittal, Neeraj},
+title = {Fast Concurrent Lock-Free Binary Search Trees},
+year = {2014},
+issue_date = {August 2014},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {49},
+number = {8},
+issn = {0362-1340},
+url = {https://doi.org/10.1145/2692916.2555256},
+doi = {10.1145/2692916.2555256},
+journal = {SIGPLAN Not.},
+month = feb,
+pages = {317–328},
+numpages = {12},
+keywords = {concurrent data structure, lock-free algorithm, binary search tree}
+}
+
+@inproceedings{ma,
+    author = {Jianwen Ma},
+    year = {2003},
+    month = {10},
+    title = {Lock-Free Insertions on Red-Black Trees},
+    publisher = {MSc thesis, University of Manitoba}
+}
+
+@article{pugh-skiplist,
+author = {Pugh, William},
+title = {Skip Lists: A Probabilistic Alternative to Balanced Trees},
+year = {1990},
+issue_date = {June 1990},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {33},
+number = {6},
+issn = {0001-0782},
+url = {https://doi.org/10.1145/78973.78977},
+doi = {10.1145/78973.78977},
+month = jun,
+pages = {668–676},
+numpages = {9},
+keywords = {data structures, searching, trees}
+}
+
+@article{10.1145/1837853.1693462,
+author = {Rossbach, Christopher J. and Hofmann, Owen S. and Witchel, Emmett},
+title = {Is Transactional Programming Actually Easier?},
+year = {2010},
+issue_date = {May 2010},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {45},
+number = {5},
+issn = {0362-1340},
+url = {https://doi.org/10.1145/1837853.1693462},
+doi = {10.1145/1837853.1693462},
+abstract = {Chip multi-processors (CMPs) have become ubiquitous, while tools that ease concurrent programming have not. The promise of increased performance for all applications through ever more parallel hardware requires good tools for concurrent programming, especially for average programmers. Transactional memory (TM) has enjoyed recent interest as a tool that can help programmers program concurrently.The transactional memory (TM) research community is heavily invested in the claim that programming with transactional memory is easier than alternatives (like locks), but evidence for or against the veracity of this claim is scant. In this paper, we describe a user-study in which 237 undergraduate students in an operating systems course implement the same programs using coarse and fine-grain locks, monitors, and transactions. We surveyed the students after the assignment, and examined their code to determine the types and frequency of programming errors for each synchronization technique. Inexperienced programmers found baroque syntax a barrier to entry for transactional programming. On average, subjective evaluation showed that students found transactions harder to use than coarse-grain locks, but slightly easier to use than fine-grained locks. Detailed examination of synchronization errors in the students' code tells a rather different story. Overwhelmingly, the number and types of programming errors the students made was much lower for transactions than for locks. On a similar programming problem, over 70% of students made errors with fine-grained locking, while less than 10% made errors with transactions.},
+journal = {SIGPLAN Not.},
+month = jan,
+pages = {47–56},
+numpages = {10},
+keywords = {optimistic concurrency, synchronization, transactional memory}
+}
+
+
+@inproceedings{is-tx-easier,
+author = {Rossbach, Christopher J. and Hofmann, Owen S. and Witchel, Emmett},
+title = {Is Transactional Programming Actually Easier?},
+year = {2010},
+isbn = {9781605588773},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/1693453.1693462},
+doi = {10.1145/1693453.1693462},
+booktitle = {Proceedings of the 15th ACM SIGPLAN Symposium on Principles and Practice of Parallel Programming},
+pages = {47–56},
+numpages = {10},
+keywords = {optimistic concurrency, transactional memory, synchronization},
+location = {Bangalore, India},
+series = {PPoPP '10}
+}
+
+@ARTICLE{das5,
+  author={Bal, Henri and Epema, Dick and de Laat, Cees and van Nieuwpoort, Rob and Romein, John and Seinstra, Frank and Snoek, Cees and Wijshoff, Harry},
+  journal={Computer}, 
+  title={A Medium-Scale Distributed System for Computer Science Research: Infrastructure for the Long Term}, 
+  year={2016},
+  volume={49},
+  number={5},
+  pages={54-63},
+  doi={10.1109/MC.2016.127}}
+  
+@inproceedings{htm-rbt,
+author = {Siakavaras, Dimitrios and Nikas, Konstantinos and Goumas, Georgios and Koziris, Nectarios},
+year = {2015},
+month = {01},
+pages = {},
+title = {Performance Analysis of Concurrent Red-Black Trees on HTM Platforms}
+}
+
+@ARTICLE{gustafson,
+    author = {John L. Gustafson},
+    title = {Reevaluating Amdahl’s law},
+    journal = {Commun. ACM},
+    year = {1988}
+}
+
+@inproceedings{amdahl,
+author = {Amdahl, Gene M.},
+title = {Validity of the Single Processor Approach to Achieving Large Scale Computing Capabilities},
+year = {1967},
+isbn = {9781450378956},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/1465482.1465560},
+doi = {10.1145/1465482.1465560},
+booktitle = {Proceedings of the April 18-20, 1967, Spring Joint Computer Conference},
+pages = {483–485},
+numpages = {3},
+location = {Atlantic City, New Jersey},
+series = {AFIPS '67 (Spring)}
+}
