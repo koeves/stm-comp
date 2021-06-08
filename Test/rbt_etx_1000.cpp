@@ -5,7 +5,7 @@
 
 TransactionalRBTree<> TRB;
 
-const int N = 2000;
+const int N = 2000000;
 
 void trb_insert(int id, int n) {
     int a = id * n, b = (id + 1) * n;
