@@ -9,7 +9,6 @@
 #ifndef TX_RED_BLACK_TREE_HPP
 #define TX_RED_BLACK_TREE_HPP
 
-#include <iostream>
 #include "AbstractTree.hpp"
 #include "../STM/EncounterModeTx.hpp"
 #include "../STM/CommitModeTx.hpp"
@@ -48,8 +47,6 @@ public:
 
     void print() const override { print_inorder(root); }
 
-private:
-
     template<class U = T>
     struct Node {
         Node() {
@@ -67,6 +64,10 @@ private:
         Node<U> *l, *r, *p, *c;
         U key;
     };
+
+    int nthreads, ninserts;
+
+private:
 
     inline static Node<T> *R = new Node<T>, 
                           *B = new Node<T>;
@@ -102,9 +103,12 @@ private:
 
         TX_ Tx;
         bool done = false;
+        //int num_aborts = 0, num_runs = 0;
+        //std::ofstream outfile("rbt_ctx_aborts_"+std::to_string(ninserts)+"_"+std::to_string(nthreads)+".txt", std::ios_base::app);
         while (!done) {
             try {
                 Tx.begin();
+                //num_runs++;
 
                 Node<T> *y = nil;
                 Node<T> *x = Tx.read(&root);
@@ -131,10 +135,12 @@ private:
                 insert_fixup(Tx, z);
 
                 done = Tx.commit();
+                //outfile << (double)num_aborts/num_runs << '\n';
             }
             catch(AbortException&) {
                 Tx.abort();
                 done = false;
+                //num_aborts++;
             }
         }
     }

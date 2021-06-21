@@ -2,6 +2,7 @@
 #define UTIL_HPP
 
 #include <iostream>
+#include <fstream>
 #include <atomic>
 #include <unordered_map>
 #include <map>
