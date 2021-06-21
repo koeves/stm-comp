@@ -179,7 +179,7 @@ lines(as.factor(threads), skip_etx_10k$speedup, type = "b", lty=2, pch=8)
 lines(as.factor(threads), skip_ctx_10k$speedup, type = "b", lty=5, pch=2)
 legend("topleft", 
        legend=c("encounter-\norder","commit-\ntime"),
-       lty=c(2,5), pch=c(8,2),  box.lwd = 0, bty="n", bg="transparent", y.intersp=1.8)
+       lty=c(2,5), pch=c(8,2),  box.lwd = 0, bty="n", bg="transparent", inset=c(0,-0.1), y.intersp=3)
 
 
 ##########################################
