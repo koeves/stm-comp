@@ -1,0 +1,59 @@
+\documentclass{beamer}
+\usepackage[utf8]{inputenc}
+\usetheme{Berlin}
+
+\usepackage{listings}
+\graphicspath{{images/}}
+
+\AtBeginSection[]
+{
+  \begin{frame}
+    \frametitle{Outline}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+
+\usenavigationsymbolstemplate{}
+
+\setbeamercovered{transparent}
+
+\title{Concurrent Datastructure Design for \\Software Transactional Memory}
+\subtitle{Bachelor Project}
+\author{
+    Daniel Köves\\
+    \vspace*{0.3cm}
+    \scriptsize{Supervisor: Prof. Wan Fokkink}\\
+    \scriptsize{Second Reader: Dr. Thilo Kielmann}
+}
+\institute{Vrije Universiteit Amsterdam}
+\date{June 2021}
+\logo{\includegraphics[height=1cm]{vu-griffioen.pdf}}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+\frametitle{Outline}
+\tableofcontents
+\end{frame}
+
+\section{Introduction}
+\include{intro}
+
+\section{Software Transactional Memory}
+\include{tm}
+
+\section{Transactional Datastructures}
+\include{stm-ds}
+
+\section{Method}
+\include{method}
+
+\section{Results}
+\include{res}
+
+\section{Conclusion}
+\include{concl}
+
+\end{document}

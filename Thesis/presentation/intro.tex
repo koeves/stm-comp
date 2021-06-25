@@ -1,0 +1,92 @@
+\begin{frame}
+\frametitle{Introduction}
+In the multi- and many-core area, we need \textit{parallelisation} to fully utilise available machines.
+\vspace{0.3cm}
+\begin{block}{Definition}
+\textbf{Parallel computing} is a programming paradigm in which multiple parallel processes or \textit{threads} execute at the same period of time.
+\end{block}
+\vspace{0.3cm}
+Parallel computing is used to speed up computation on a multi-core system.
+\end{frame}
+
+\begin{frame}
+\frametitle{Synchronisation}
+\onslide<1->{Synchronisation refers to how concurrent threads manage and operate on shared data.\\}
+\vspace{0.3cm}
+\onslide<2->{Concurrent execution should not:
+\begin{itemize}
+    \item Overwrite others
+    \item See inconsistent states
+\end{itemize}}
+\vspace{0.3cm}
+\onslide<3->{Possible ways to achieve synchronisation: locks, lock-free primitives, transactions}
+\end{frame}
+
+\begin{frame}{Locking}
+\onslide<1->{Locks provide a way to achieve \textit{mutual exclusion} by guarding \textit{critical sections} -- a block of code only a single thread is allowed to execute at a time.\\}
+\vspace{0.3cm}
+\onslide<2->{Locks provide (at least) two operations: \texttt{lock()} and \texttt{unlock()}\\}
+\vspace{0.3cm}
+\onslide<3->{Programming with locks is generally hard and difficult to debug\\}
+\vspace{0.3cm}
+\onslide<4->{Other problems with locking: priority inversion, convoying, deadlock, etc.}
+
+\end{frame}
+
+
+\begin{frame}{Lock-Free Primitives}
+    \onslide<1->{Lock-free primitives provide safe access the shared data without the use of locks.\\}
+    \onslide<2->{Practical if hardware-assisted, like Compare-and-Swap (Intel) or Load-link/Store-conditional (ARM)}
+    \onslide<3->{\begin{block}{Compare-and-Swap($A$, $E$, $V$)}
+    Execute atomically the following: if the value at $A$ is $E$ then set it to $V$ and return true, else do nothing and return false.
+    \end{block}}
+    \onslide<4->{\begin{block}{Load-link/Store-conditional}
+    \texttt{LL} instruction loads the value at address $A$. Subsequent \texttt{SC} call with some value $V$ succeeds only if the value of $A$ has not changed since.
+    \end{block}}
+\end{frame}
+
+\begin{frame}{Lock-Free Primitives}
+    \onslide<1->{Limitations of lock-free primitives:}
+    \begin{itemize}
+        \item<2-> Usually operate on a single word in memory
+        \item<3-> Complex lock-free algorithms tend to have an unnatural structure
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Transactional Memory}
+    \onslide<1->{Introduced by Herlihy and Moss in 1993 [1]}
+    \vspace{0.2cm}
+    \onslide<2->{\begin{block}{Definition}
+    \textbf{Transactions} consist of a set of instructions and are \textit{atomic} and \textit{serializable}. 
+    \end{block}}
+    \vspace{0.2cm}
+    \onslide<3->{Transactions make speculative changes to memory which they make atomically visible upon \textit{committing}.\\}
+    \vspace{0.3cm}
+    \onslide<4->{If an inconsistent state is encountered, the transaction \textit{aborts} and can be retried.}
+\end{frame}
+
+\begin{frame}{Transactional Programming}
+    \onslide<1->{Provides a straightforward abstraction to deal with concurrency:}
+    
+    \onslide<2->{\begin{block}{Transactional Programming}
+    \begin{itemize}
+        \item While transaction is not done:
+        \item Perform actions on shared data
+        \item If inconsistent state is found:
+        \item Abort transaction and retry
+    \end{itemize}
+    \end{block}}
+\end{frame}
+
+\begin{frame}{Thesis Goals}
+    \onslide<1->{\begin{itemize}
+        \item Compare the different variants of Software Transactional Memory
+        \item Investigate how transactional programming can be applied to concurrent datastructure design
+    \end{itemize}}
+    
+    \onslide<2->{\begin{block}{Research Questions}
+    \begin{itemize}
+        \item How does the locking scheme of lock-based STM implementations affect the insertion performance of concurrent Red-Black Trees and Skiplists?
+        \item How well suited is transactional programming for concurrent datastructures in terms of ease-of-design?
+    \end{itemize}\end{block}}
+\end{frame}
